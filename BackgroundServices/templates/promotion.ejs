@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Beauty Bliss - Product Promotion</title>
+    <style type="text/css">
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        min-width: 100%;
+        font-family: Arial, sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+        color: #222222;
+      }
+
+      a {
+        color: #d55fbb;
+        text-decoration: none;
+      }
+
+      h1 {
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1.25;
+        margin-top: 0;
+        margin-bottom: 15px;
+        text-align: center;
+      }
+
+      .email-wrapper {
+        max-width: 700px;
+        margin: 0 auto;
+        background-color: #fff;
+        padding: 20px;
+      }
+
+      .email-header {
+        background-color: #1e1e1e;
+        padding: 30px;
+        color: #f086d9;
+        text-align: center;
+      }
+
+      .email-body {
+        padding: 14px;
+        background-color: #f4f3f3;
+        min-height: 70vh;
+      }
+
+      .email-footer {
+        background-color: #1e1e1e;
+        padding: 14px;
+        color: #d55fbb;
+        text-align: center;
+      }
+
+      img {
+        padding: 24px;
+        max-width: 100%;
+        height: auto;
+      }
+
+      .product-list {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+        gap: 20px;
+      }
+
+      .product-item {
+        background-color: #fff;
+        border: 1px solid #ccc;
+        padding: 15px;
+        width: 45%;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+
+      .product-item img {
+        max-width: 100%;
+        height: auto;
+        margin-bottom: 10px;
+      }
+
+      .product-item h3 {
+        font-size: 18px;
+        margin-bottom: 10px;
+      }
+
+      .product-item p {
+        margin-bottom: 20px;
+        color: #555;
+      }
+
+      .product-item a {
+        background-color: #d55fbb;
+        color: #fff;
+        padding: 10px 20px;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-wrapper">
+      <div class="email-header">
+        <img
+          src="https://res.cloudinary.com/dap91fhxh/image/upload/v1723705045/blisslogo1_hefbyn.png"
+          height="200px"
+          width="200px"
+          alt="Beauty Bliss Logo"
+        />
+      </div>
+      <div class="email-body">
+        <p>
+          We are thrilled to introduce some of our featured beauty products just
+          for you. These products are carefully selected to enhance your beauty
+          routine and provide you with the best results.
+        </p>
+
+        <div class="product-list">
+          <% products.forEach(function(product) { %>
+          <div class="product-item">
+            <img src="<%= product.img %>" alt="<%= product.name %>" />
+            <h3><%= product.name %></h3>
+            <p><%= product.description %></p>
+            <a href="<%= product.link %>">Shop Now</a>
+          </div>
+          <% }) %>
+        </div>
+
+        <p>
+          Stay tuned for more exclusive offers and beauty tips. Thank you for
+          being a part of Beauty Bliss!
+        </p>
+      </div>
+      <div class="email-footer">
+        <p>&copy;2024 Beauty Bliss. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>

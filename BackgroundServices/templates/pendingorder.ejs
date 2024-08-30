@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pending Order Notification</title>
+    <style type="text/css">
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        min-width: 100%;
+        font-family: Arial, sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+        color: #222222;
+      }
+
+      a {
+        color: #fff;
+        text-decoration: none;
+      }
+
+      h1 {
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1.25;
+        margin-top: 0;
+        margin-bottom: 15px;
+        text-align: center;
+      }
+
+      .email-wrapper {
+        max-width: 700px;
+        margin: 0 auto;
+        background-color: #fff;
+        padding: 20px;
+      }
+
+      .email-header {
+        background-color: #1e1e1e;
+        padding: 30px;
+        color: #f086d9;
+        text-align: center;
+      }
+
+      .email-body {
+        padding: 14px;
+        background-color: #f4f3f3;
+        height: auto;
+      }
+
+      .email-footer {
+        background-color: #1e1e1e;
+        padding: 14px;
+        color: #d55fbb;
+        text-align: center;
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+      }
+
+      .product-list {
+        margin: 20px 0;
+      }
+
+      .product-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .product-img {
+        margin-right: 20px;
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+      }
+
+      .product-details {
+        flex: 1;
+      }
+
+      .product-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin: 0;
+      }
+
+      .product-price {
+        font-size: 16px;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-wrapper">
+      <div class="email-header">
+        <img src="https://res.cloudinary.com/dap91fhxh/image/upload/v1723705045/blisslogo1_hefbyn.png" height="200px" width="200px" alt="Beauty Bliss Logo">
+      </div>
+      <div class="email-body">
+        <h1>Pending Order Notification</h1>
+        <p>Hello <%= name %>,</p>
+        <p>Thank You for placing an order. Your is being processed and will be shipped very soon. Please find the details below:</p>
+
+        <div class="product-list">
+          <% products.forEach(product => { %>
+            <div class="product-item">
+              <img src="<%= product.img %>" alt="<%= product.title %>" class="product-img" />
+              <div class="product-details">
+                <p class="product-title"><%= product.title %></p>
+                <p class="product-price">Price: $<%= product.price %></p>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+        <p>If you have any questions or need assistance, feel free to <a href="">contact us</a>.</p>
+        <p>Thank you for shopping with Beauty Bliss!</p>
+      </div>
+      <div class="email-footer">
+        <p>&copy;2024 Beauty Bliss. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>
