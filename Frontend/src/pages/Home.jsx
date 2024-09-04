@@ -1,7 +1,16 @@
+import Banner from '../components/Banner';
+import Category from '../components/Category';
+import Products from '../components/Products';
+
 const Home = () => {
   return (
-    <div>Home</div>
-  )
-}
+    <div>
+      <Banner />
+      <Category />
+      <Products />
 
-export default Home
+    </div>
+  );
+};
+
+export default Home;
