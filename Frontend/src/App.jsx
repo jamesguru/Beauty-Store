@@ -6,6 +6,8 @@ import Myaccount from "./pages/Myaccount";
 import { RouterProvider, createBrowserRouter, Outlet } from "react-router-dom";
 import Announcement from "./components/Announcement";
 import Product from "./pages/Product";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 function App() {
   const Layout = () => {
@@ -31,6 +33,14 @@ function App() {
         {
           path:"/cart",
           element: <Cart />
+        },
+        {
+          path:"/login",
+          element: <Login />
+        },
+        {
+          path:"/create-account",
+          element: <Register />
         },
         {
           path:"/myaccount",
