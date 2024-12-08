@@ -64,6 +64,16 @@ const Home = () => {
                   <td className="py-2 px-4">$ 200</td>
                   <td className="py-2 px-4 text-green-500">Approved</td>
                 </tr>
+                <tr className="border-b">
+                  <td className="py-2 px-4">John Doe</td>
+                  <td className="py-2 px-4">$ 200</td>
+                  <td className="py-2 px-4 text-red-500">Decline</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="py-2 px-4">John Doe</td>
+                  <td className="py-2 px-4">$ 200</td>
+                  <td className="py-2 px-4 text-green-500">Approved</td>
+                </tr>
               </tbody>
 
             </table>

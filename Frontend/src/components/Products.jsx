@@ -8,6 +8,7 @@ const Products = () => {
         <Product  img="/lotion1.jpg"/>
         <Product  img="/lotion2.jpg"/>
         <Product  img="/serum1.jpg" />
+        <Product  img="/foundation.jpg" />
     </div>
   );
 };
