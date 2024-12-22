@@ -1,13 +1,80 @@
 import StarRatings from 'react-star-ratings';
 import {FaMinus, FaPlus} from 'react-icons/fa';
+import { useLocation } from 'react-router-dom';
+import { userRequest } from "../requestMethods";
+import { useState, useEffect} from 'react';
+
 const Product = () => {
+  const location = useLocation();
+  const id = location.pathname.split("/")[2]
+  const [product, setProduct] = useState({});
+  const [quantity, setQuantity] = useState(1);
+
+  let price;
+
+ const handleQuantity = (action) =>{
+  if(action === "dec"){
+    setQuantity(quantity === 1 ? 1 : quantity - 1)
+  }
+
+  if(action === "inc"){
+    setQuantity(quantity + 1)
+  }
+ }
+
+
+ useEffect(() => {
+  const getProduct = async () => {
+    try {
+      const res = await userRequest.get("/products/find/" + id);
+
+      setProduct(res.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  getProduct();
+}, [id]);
+
+const handlePrice = (
+  originalPrice,
+  discountedPrice,
+  wholePrice,
+  minimumQuantity,
+  quantity
+) => {
+  if (quantity > minimumQuantity && discountedPrice) {
+    discountedPrice = wholePrice;
+
+    price = discountedPrice;
+
+    return price;
+  } else if (quantity > minimumQuantity && originalPrice) {
+    originalPrice = wholePrice;
+
+    price = originalPrice;
+
+    return price;
+  } else if (discountedPrice) {
+    price = discountedPrice;
+
+    return price;
+  } else {
+    price = originalPrice;
+
+    return price;
+  }
+};
+
+
   return (
     <div className="h-auto flex justify-stretch p-[30px]">
 
       {/* LEFT */}
       <div className="flex-1 h-[500px] w-[600px]">
         <img
-          src="/lotion2.jpg"
+          src={product.img}
           alt=""
           className="h-[100%] w-[100%] object-cover"
         />
@@ -17,12 +84,20 @@ const Product = () => {
       {/* RIGHT */}
       <div className="flex flex-1 flex-col ml-10">
         <h2 className="text-[25px] font-semibold mb-[20px]">
-          Bajaj Almond Drops,6X Vitamin E Nourishment
+         {product.title}
         </h2>
         <span>
-          The new and better Bajaj Almond Drops Hair Oil has 6x Vitamin E that helps reduce hair fall and gives beautiful, strong hair. It is light, non-sticky and the perfect solution for your hair fall worries. Now style your hair any way you want without any fear of hair fall. A non-sticky Almond Hair Oil with the goodness of 6x Vitamin E for nourishment Bajaj Almond Oil can help reduce hair fall due to breakage by up to 79% The almond oil also helps you get beautiful, strong, and shiny hair, with regular use The non-sticky oil feels light on the hair and makes styling and braiding your hair so easy Suitable for all hair types, the hair oil ensures you rock your favorite hairstyle with confidence
+          {product.desc}
         </span>
-        <h2 className="font-semibold mt-2 text-[20px]">$ 90</h2>
+        <h2 className="font-semibold mt-2 text-[20px]">$  
+          
+          {handlePrice(
+            product.originalPrice,
+            product.discountedPrice,
+            product.wholesalePrice,
+            product?.wholesaleMinimumQuantity,
+            quantity
+          )}</h2>
 
         <span className="flex items-center">
 
@@ -41,18 +116,18 @@ const Product = () => {
           </h2>
           <hr className="mb-4" />
           <span className="block text-gray-600 text-base text-[18px]">
-            1 Garnier Even & Matte Vitamin C Cleansing Foam 500ml
+            {product.title}
           </span>
         </div>
 
         <div className="inline-flex items-center bg-[#ef93db] text-white font-semibold text-sm p-3 rounded-full shadow-md">
-          Wholesdale Available : $70 as from 10 items{' '}
+          Wholesale Available : ${product.wholesalePrice} as from {product.wholesaleMinimumQuantity} items{' '}
         </div>
 
         <div className="flex items-center my-5 p-4">
-          <FaMinus className="bg-[#ef93db] text-white cursor-pointer p-2 rounded-full mr-4 text-3xl" />
-          <span className="text-lg font-semibold mx-4">1</span>
-          <FaPlus className="bg-[#ef93db] text-white cursor-pointer p-2 rounded-full mr-4 text-3xl" />
+          <FaMinus className="bg-[#ef93db] text-white cursor-pointer p-2 rounded-full mr-4 text-3xl"  onClick={() => handleQuantity("dec")}/>
+          <span className="text-lg font-semibold mx-4">{quantity}</span>
+          <FaPlus className="bg-[#ef93db] text-white cursor-pointer p-2 rounded-full mr-4 text-3xl"  onClick={() => handleQuantity("inc")}/>
 
         </div>
 
