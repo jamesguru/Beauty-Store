@@ -88,8 +88,12 @@ const getALLproducts = asyncHandler(async (req, res) => {
 const ratingProduct = asyncHandler(async (req, res) => {
   const { star, name, comment, postedBy } = req.body;
 
-  if (star && name && coment && postedBy) {
-    const postedBy = await Product.findByIdAndUpdate(
+  console.log(star, name, comment, postedBy)
+  console.log(req.params.id)
+
+
+  if (star) {
+    await Product.findByIdAndUpdate(
       req.params.id,
 
       {
