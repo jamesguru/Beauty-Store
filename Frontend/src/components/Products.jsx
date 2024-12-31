@@ -72,7 +72,7 @@ const Products = ({ filters, sort, query }) => {
       {filteredProducts.map((product, index) => (
 
         <Link to={`/product/${product._id}`}>
-          <Product img={product.img} title={product.title} />
+          <Product product={product} />
         </Link>
       ))
       }

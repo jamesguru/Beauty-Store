@@ -1,4 +1,4 @@
-import Order from "../models/banner.model.js";
+import Order from "../models/order.model.js";
 import asyncHandler from "express-async-handler";
 
 // CREATE ORDER
@@ -15,9 +15,10 @@ const createOrder = asyncHandler(async (req, res) => {
 
 // UPDATE ORDER
 const updateOrder = asyncHandler(async (req, res) => {
+  
   const updatedOrder = await Order.findByIdAndUpdate(
-    req.paramas.id,
-    { $set: req.body },
+    req.params.id,
+    { $set: req.body},
     { new: true }
   );
 
@@ -42,14 +43,17 @@ const deleteOrder = asyncHandler(async (req, res) => {
 
 // GET USER ORDER
 const getUserOrder = asyncHandler(async (req, res) => {
-  const orders = await Order.find({ userId: req.params.id }).reverse();
-  if (!orders) {
-    res.status(400);
-    throw new Error("No order was found or something went wrong");
+  const orders = await Order.find({ userId: req.params.id }).exec();
+
+  // Execute the query
+  if (!orders || orders.length === 0) {
+    res.status(404);
+    throw new Error("No orders were found for this user.");
   } else {
-    res.status(200).json(orders);
+    res.status(200).json(orders.reverse()); // Reverse the resulting array
   }
 });
+
 
 // GET ALL ORDERS
 const getAllOrders = asyncHandler(async (req, res) => {
