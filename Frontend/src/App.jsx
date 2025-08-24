@@ -11,15 +11,16 @@ import Register from "./pages/Register";
 import ProductList from "./pages/ProductList";
 import Order from "./pages/Order";
 import {useSelector } from "react-redux";
+import Timetable from "./components/Timetable";
 
 function App() {
   const user = useSelector((state) => state.user);
   const Layout = () => {
     return (
       <div>
-        <Announcement/>
         <Navbar />
         <Outlet />
+        <Timetable />
         <Footer />
       </div>
     );
