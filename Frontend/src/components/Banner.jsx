@@ -11,21 +11,77 @@ const ContinuousSpinWheel = () => {
   const navigate = useNavigate();
 
   const websiteFeatures = [
-    { name: "Skincare", description: "Discover radiant skin with natural care", color: "from-pink-200 via-rose-300 to-pink-400", icon: "🌸", path: "/skincare", searchTerm: "skincare products" },
-    { name: "Makeup", description: "Premium cosmetics for flawless beauty", color: "from-fuchsia-300 via-rose-400 to-amber-300", icon: "💄", path: "/makeup", searchTerm: "makeup collection" },
-    { name: "Haircare", description: "Transform your hair with care", color: "from-violet-300 via-purple-400 to-indigo-300", icon: "💇‍♀️", path: "/haircare", searchTerm: "hair care products" },
-    { name: "Fragrance", description: "Exquisite perfumes with lasting scents", color: "from-amber-200 via-yellow-300 to-pink-200", icon: "✨", path: "/fragrance", searchTerm: "perfumes" },
-    { name: "Packages", description: "Curated bundles for complete routines", color: "from-rose-200 via-fuchsia-300 to-purple-300", icon: "🎁", path: "/packages", searchTerm: "beauty bundles" },
-    { name: "New Arrivals", description: "Innovative beauty solutions", color: "from-blue-200 via-cyan-300 to-emerald-200", icon: "🆕", path: "/new", searchTerm: "new products" },
-    { name: "Best Sellers", description: "Loved by thousands of beauty lovers", color: "from-emerald-200 via-teal-300 to-lime-200", icon: "⭐", path: "/bestsellers", searchTerm: "best sellers" },
-    { name: "Special Offers", description: "Exclusive deals & discounts", color: "from-red-200 via-pink-300 to-rose-400", icon: "🔥", path: "/offers", searchTerm: "special offers" },
+    { 
+      name: "Skincare", 
+      description: "Discover radiant skin with natural care", 
+      icon: "🌸", 
+      path: "/skincare", 
+      searchTerm: "skincare products",
+      productIcon: "💋"
+    },
+    { 
+      name: "Makeup", 
+      description: "Premium cosmetics for flawless beauty", 
+      icon: "💄", 
+      path: "/makeup", 
+      searchTerm: "makeup collection",
+      productIcon: "💋"
+    },
+    { 
+      name: "Haircare", 
+      description: "Transform your hair with care", 
+      icon: "💇‍♀️", 
+      path: "/haircare", 
+      searchTerm: "hair care products",
+      productIcon: "💋"
+    },
+    { 
+      name: "Fragrance", 
+      description: "Exquisite perfumes with lasting scents", 
+      icon: "✨", 
+      path: "/fragrance", 
+      searchTerm: "perfumes",
+      productIcon: "🧪"
+    },
+    { 
+      name: "Packages", 
+      description: "Curated bundles for complete routines", 
+      icon: "🎁", 
+      path: "/packages", 
+      searchTerm: "beauty bundles",
+      productIcon: "📦"
+    },
+    { 
+      name: "New Arrivals", 
+      description: "Innovative beauty solutions", 
+      icon: "🆕", 
+      path: "/new", 
+      searchTerm: "new products",
+      productIcon: ""
+    },
+    { 
+      name: "Best Sellers", 
+      description: "Loved by thousands of beauty lovers", 
+      icon: "⭐", 
+      path: "/bestsellers", 
+      searchTerm: "best sellers",
+      productIcon: "🏆"
+    },
+    { 
+      name: "Special Offers", 
+      description: "Exclusive deals & discounts", 
+      icon: "🔥", 
+      path: "/offers", 
+      searchTerm: "special offers",
+      productIcon: "💰"
+    },
   ];
 
-  // Continuous spinning animation
+  // Continuous spinning animation - made slower for elegance
   useEffect(() => {
     let animationId;
     const spin = () => {
-      setRotation((prev) => (prev + 0.4) % 360);
+      setRotation((prev) => (prev + 0.2) % 360);
       animationId = requestAnimationFrame(spin);
     };
     if (isSpinning) animationId = requestAnimationFrame(spin);
@@ -46,35 +102,30 @@ const ContinuousSpinWheel = () => {
   }, [isSpinning, isSearching]);
 
   const handleSpinToSearch = () => {
-    // Stop the continuous spinning
     setIsSpinning(false);
     setIsSearching(true);
     
-    // Select a random item for search
     const randomIndex = Math.floor(Math.random() * websiteFeatures.length);
     const selected = websiteFeatures[randomIndex];
     setSelectedItem(selected);
     setShowDescription(true);
     
-    // Add some spinning animation before redirecting
     let spinCount = 0;
-    const maxSpins = 3; // Number of full rotations before stopping
+    const maxSpins = 2;
     
     const spinAnimation = () => {
       setRotation((prev) => {
-        const newRotation = (prev + 20) % 360;
+        const newRotation = (prev + 15) % 360;
         
-        // Check if we've completed the desired number of spins
         if (newRotation < prev && spinCount < maxSpins) {
           spinCount++;
         }
         
         if (spinCount >= maxSpins) {
-          // Stop spinning and redirect after a brief pause
           setTimeout(() => {
             navigate(`/products/${encodeURIComponent(selected.searchTerm)}`);
           }, 1000);
-          return prev; // Stop animation
+          return prev;
         }
         
         return newRotation;
@@ -85,7 +136,6 @@ const ContinuousSpinWheel = () => {
       }
     };
     
-    // Start the spin animation
     requestAnimationFrame(spinAnimation);
   };
 
@@ -99,7 +149,8 @@ const ContinuousSpinWheel = () => {
           style={{
             top: `${30 + Math.random() * 60}%`,
             left: `${30 + Math.random() * 60}%`,
-            animationDelay: `${i * 0.5}s`,
+            animationDelay: `${i * 0.8}s`,
+            animationDuration: '3s',
           }}
         />
       ))}
@@ -125,21 +176,26 @@ const ContinuousSpinWheel = () => {
 
       {/* Wheel */}
       <div
-        className="relative w-80 h-80 rounded-full shadow-[0_0_60px_rgba(255,192,203,0.5)] border-8 border-white/60 cursor-pointer overflow-hidden"
+        className="relative w-80 h-80 rounded-full shadow-[0_0_60px_rgba(255,192,203,0.5)] border-8 border-white/60 cursor-pointer overflow-hidden transition-all duration-300 hover:shadow-[0_0_80px_rgba(255,192,203,0.7)] hover:scale-105"
         style={{ background: "radial-gradient(circle, #fff 10%, transparent 70%)" }}
         onClick={handleSpinToSearch}
       >
         <div
-          className="absolute w-full h-full rounded-full transition-transform duration-1000"
+          className="absolute w-full h-full rounded-full transition-transform duration-1000 ease-out"
           style={{ transform: `rotate(${rotation}deg)` }}
         >
+          {/* Background with subtle gradient */}
+          <div className="absolute inset-0 bg-gradient-to-br from-pink-50 via-purple-50 to-rose-50 opacity-70"></div>
+          
           {websiteFeatures.map((feature, index) => {
             const angle = 360 / websiteFeatures.length;
             const segmentAngle = angle * index;
+            const rotationAngle = segmentAngle + angle / 2;
+            
             return (
               <div
                 key={index}
-                className={`absolute w-full h-full bg-gradient-to-br ${feature.color} opacity-90`}
+                className="absolute w-full h-full transition-opacity duration-500"
                 style={{
                   clipPath: `polygon(50% 50%, 
                     ${50 + 50 * Math.cos(((segmentAngle - 90) * Math.PI) / 180)}% 
@@ -147,39 +203,71 @@ const ContinuousSpinWheel = () => {
                     ${50 + 50 * Math.cos(((segmentAngle + angle - 90) * Math.PI) / 180)}% 
                     ${50 + 50 * Math.sin(((segmentAngle + angle - 90) * Math.PI) / 180)}%)`,
                   transform: `rotate(${segmentAngle}deg)`,
-                  backgroundSize: "200% 200%",
-                  animation: "shimmer 3s infinite linear",
                 }}
               >
+                {/* Segment background with subtle gradient */}
+                <div className="absolute inset-0 bg-gradient-to-b from-white/80 to-pink-100/50 transition-all duration-700 hover:opacity-90"></div>
+                
+                {/* Decorative corner elements */}
+                <div className="absolute top-0 left-1/2 w-12 h-12 -translate-x-1/2 -translate-y-1/2 bg-pink-200 rounded-full opacity-70 transition-all duration-1000"></div>
+                
+                {/* Product icon in the middle of the segment */}
                 <div
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white text-xs w-28 text-center font-semibold"
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-3xl z-10 transition-transform duration-1000"
                   style={{
-                    transform: `rotate(${-segmentAngle}deg) translateY(-40px)`,
-                    textShadow: "0 2px 4px rgba(0,0,0,0.3)",
+                    transform: `rotate(${-segmentAngle}deg) translateY(-60px)`,
                   }}
                 >
-                  <div className="text-xl mb-1">{feature.icon}</div>
-                  {feature.name}
+                  {feature.productIcon}
                 </div>
+                
+                {/* Segment border */}
+                <div className="absolute bottom-0 left-1/2 w-0.5 h-10 bg-gradient-to-t from-pink-300 to-transparent -translate-x-1/2 transition-all duration-700"></div>
               </div>
             );
           })}
+          
+          {/* Outer decorative ring */}
+          <div className="absolute inset-0 rounded-full border-4 border-white/30 transition-all duration-700"></div>
+          
+          {/* Inner decorative ring */}
+          <div className="absolute inset-8 rounded-full border-2 border-white/40 transition-all duration-700"></div>
         </div>
 
         {/* Glowing jewel center */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-gradient-to-br from-white via-pink-100 to-rose-200 rounded-full border-4 border-white shadow-[0_0_40px_rgba(255,182,193,0.8)] flex items-center justify-center animate-pulse">
-          <span className="text-slate-700 font-bold text-lg">DB</span>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-gradient-to-br from-white via-pink-100 to-rose-200 rounded-full border-4 border-white shadow-[0_0_40px_rgba(255,182,193,0.8)] flex items-center justify-center transition-all duration-1000 hover:shadow-[0_0_60px_rgba(255,182,193,0.9)] hover:scale-110">
+          <span className="text-slate-700 font-bold text-lg transition-all duration-700">DB</span>
         </div>
         
         {/* Spin to search text */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-          <div className="text-white font-bold text-sm bg-black/20 px-4 py-2 rounded-full backdrop-blur-sm">
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center transition-all duration-500">
+          <div className="text-white font-bold text-sm bg-black/20 px-4 py-2 rounded-full backdrop-blur-sm transition-all duration-500 hover:bg-black/30">
             Click to Spin & Search
           </div>
         </div>
+        
+        {/* Decorative elements around the wheel */}
+        <div className="absolute -inset-4 rounded-full border border-pink-200/50 transition-all duration-1000"></div>
+        <div className="absolute -inset-6 rounded-full border border-purple-200/30 transition-all duration-1500"></div>
       </div>
 
-      {/* Extra shimmer CSS */}
+      {/* Decorative floating beauty products around the wheel */}
+      {["💄", "🧴", "🧴", "💎", "✨", "💎"].map((icon, i) => (
+        <div
+          key={i}
+          className="absolute text-2xl opacity-70 transition-all duration-1000"
+          style={{
+            top: `${20 + Math.random() * 60}%`,
+            left: `${20 + Math.random() * 60}%`,
+            animationDelay: `${i * 1.2}s`,
+            animationDuration: `${8 + Math.random() * 4}s`,
+          }}
+        >
+          {icon}
+        </div>
+      ))}
+
+      {/* Extra shimmer CSS with slower animations */}
       <style>{`
         @keyframes shimmer {
           0% { background-position: 0% 50%; }
@@ -190,6 +278,13 @@ const ContinuousSpinWheel = () => {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes float {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-5px) rotate(2deg); }
+        }
+        .animate-float {
+          animation: float 8s ease-in-out infinite;
+        }
       `}</style>
     </div>
   );
@@ -199,6 +294,16 @@ const Banner = () => {
   const [banner, setBanner] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [showContent, setShowContent] = useState(false);
+  const [currentTextIndex, setCurrentTextIndex] = useState(0);
+  const textRef = useRef(null);
+
+  // Animated text options
+  const animatedTexts = [
+    "Discover Your Beauty",
+    "Explore Our Collection",
+    "Find Your Perfect Look",
+    "Transform Your Routine"
+  ];
 
   useEffect(() => {
     const fetchRandomBanner = async () => {
@@ -206,7 +311,6 @@ const Banner = () => {
         const res = await userRequest.get("/banners/random");
         setBanner(res.data);
         
-        // Slight delay to allow background image to load
         setTimeout(() => {
           setIsLoading(false);
           setShowContent(true);
@@ -220,6 +324,17 @@ const Banner = () => {
     fetchRandomBanner();
   }, []);
 
+  // Text animation effect
+  useEffect(() => {
+    if (!showContent) return;
+    
+    const interval = setInterval(() => {
+      setCurrentTextIndex((prev) => (prev + 1) % animatedTexts.length);
+    }, 4000);
+    
+    return () => clearInterval(interval);
+  }, [showContent]);
+
   // Custom CSS for animations
   const styles = `
     @keyframes fadeIn {
@@ -230,11 +345,37 @@ const Banner = () => {
       0%, 100% { transform: translateY(0) rotate(0deg); }
       50% { transform: translateY(-8px) rotate(1deg); }
     }
+    @keyframes typewriter {
+      from { width: 0; }
+      to { width: 100%; }
+    }
+    @keyframes blink {
+      from, to { border-color: transparent; }
+      50% { border-color: white; }
+    }
+    @keyframes textShine {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
     .animate-fadeIn {
       animation: fadeIn 0.5s ease-out forwards;
     }
     .animate-float {
       animation: float 6s ease-in-out infinite;
+    }
+    .animate-typewriter {
+      overflow: hidden;
+      border-right: 2px solid white;
+      white-space: nowrap;
+      animation: typewriter 2s steps(20) 1s 1 normal both, blink 0.8s steps(20) infinite;
+    }
+    .animate-text-shine {
+      background: linear-gradient(to right, #FFF 20%, #FF9EC5 40%, #FF9EC5 60%, #FFF 80%);
+      background-size: 200% auto;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: textShine 3s linear infinite;
     }
     .text-shadow { 
       text-shadow: 0 2px 4px rgba(0,0,0,0.3); 
@@ -295,8 +436,18 @@ const Banner = () => {
               {banner.subtitle?.toUpperCase() || "DISCOVER BEAUTY"}
             </span>
             
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-normal mb-6 leading-tight opacity-0 animate-fadeIn delay-100 text-shadow">
-              {banner.title || "Explore Our Beauty Universe"}
+            {/* Animated main title */}
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-normal mb-6 leading-tight text-shadow">
+              <span className="block opacity-0 animate-fadeIn delay-100">
+                {banner.title || "Explore Our"}
+              </span>
+              <span 
+                ref={textRef}
+                className="block mt-2 animate-text-shine opacity-0 animate-fadeIn delay-300"
+                key={currentTextIndex}
+              >
+                {animatedTexts[currentTextIndex]}
+              </span>
             </h1>
             
             <p className="text-slate-200 mb-10 text-lg max-w-md opacity-0 animate-fadeIn delay-200 text-shadow">
