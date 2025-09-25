@@ -1,15 +1,73 @@
-import { FaMinus, FaPlus, FaTrashAlt, FaArrowLeft, FaShoppingBag } from 'react-icons/fa';
+import { FaMinus, FaPlus, FaTrashAlt, FaArrowLeft, FaShoppingBag, FaCreditCard, FaBox, FaInfoCircle, FaTimes, FaSpinner } from 'react-icons/fa';
 import { useDispatch, useSelector } from "react-redux";
 import { clearCart, removeProduct, updateQuantity } from '../redux/cartRedux';
-import { userRequest } from "../requestMethods";
+import { paymentRequest, userRequest } from "../requestMethods";
 import { toast, ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 
 const Cart = () => {
   const cart = useSelector((state) => state.cart);
   const user = useSelector((state) => state.user);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [modalStep, setModalStep] = useState(1); // 1: Payment choice, 2: Details form
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [showPaymentIframe, setShowPaymentIframe] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState('');
+  const [isIframeLoading, setIsIframeLoading] = useState(true);
+  const [orderDetails, setOrderDetails] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    payNow: false
+  });
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [currentOrderId, setCurrentOrderId] = useState(null);
+  const [phoneError, setPhoneError] = useState('');
+
+  // Handle modal animation states
+  useEffect(() => {
+    if (showOrderModal) {
+      requestAnimationFrame(() => {
+        setIsModalVisible(true);
+      });
+    } else {
+      setIsModalVisible(false);
+    }
+  }, [showOrderModal]);
+
+  // Check payment status periodically if iframe is shown
+  useEffect(() => {
+    let intervalId;
+    
+    if (showPaymentIframe && currentOrderId) {
+      intervalId = setInterval(async () => {
+        try {
+          const response = await userRequest.get(`/pesapal/status?trackingId=${currentOrderId}&reference=${currentOrderId}`);
+          console.log('Payment status check:', response.data);
+          
+          if (response.data.status === 'COMPLETED') {
+            // Payment successful
+            clearInterval(intervalId);
+            toast.success('🎉 Payment completed successfully!');
+            dispatch(clearCart());
+            setShowPaymentIframe(false);
+            navigate('/myorders');
+          }
+        } catch (error) {
+          console.error('Error checking payment status:', error);
+        }
+      }, 3000); // Check every 3 seconds
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [showPaymentIframe, currentOrderId, navigate, dispatch]);
 
   const handleRemoveProduct = (product) => {
     dispatch(removeProduct(product));
@@ -35,35 +93,429 @@ const Cart = () => {
     }));
   };
 
-  const handleCheckout = async () => {
-    if (user.currentUser) {
-      try {
-        const res = await userRequest.post("/stripe/create-checkout-session", {
-          cart,
-          userId: user.currentUser._id,
-          email: user.currentUser.email,
-          name: user.currentUser.name,
+  const validatePhoneNumber = (phone) => {
+    // Remove any non-digit characters
+    const cleanedPhone = phone.replace(/\D/g, '');
+    
+    // Check if it's a valid Kenyan phone number
+    const kenyanRegex = /^(254|0)(7[0-9]|1[0-1])[0-9]{7}$/;
+    
+    if (!cleanedPhone) {
+      return { isValid: false, message: 'Phone number is required' };
+    }
+    
+    if (!kenyanRegex.test(cleanedPhone)) {
+      return { isValid: false, message: 'Please enter a valid Kenyan phone number' };
+    }
+    
+    // Convert to international format (254...)
+    let formattedPhone = cleanedPhone;
+    if (cleanedPhone.startsWith('0')) {
+      formattedPhone = '254' + cleanedPhone.substring(1);
+    }
+    
+    return { isValid: true, formatted: formattedPhone };
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    
+    if (name === 'phone') {
+      // Only allow numbers
+      const numbersOnly = value.replace(/\D/g, '');
+      
+      // Validate phone number as user types
+      const validation = validatePhoneNumber(numbersOnly);
+      setPhoneError(validation.isValid ? '' : validation.message);
+      
+      setOrderDetails(prev => ({
+        ...prev,
+        [name]: numbersOnly
+      }));
+      return;
+    }
+    
+    setOrderDetails(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleProceedToCheckout = () => {
+    if (!user.currentUser) {
+      toast.error("Please login to place an order");
+      return;
+    }
+    setModalStep(1);
+    setShowOrderModal(true);
+  };
+
+  const handleCloseModal = () => {
+    if (!isProcessing) {
+      setIsModalVisible(false);
+      setTimeout(() => {
+        setShowOrderModal(false);
+        setModalStep(1);
+        setOrderDetails({
+          name: '',
+          phone: '',
+          email: '',
+          address: '',
+          payNow: false
         });
-        if (res.data.url) {
-          window.location.href = res.data.url;
-        }
-      } catch (error) {
-        console.log(error.message);
-        toast.error('Checkout failed. Please try again.');
-      }
-    } else {
-      toast.error("Please login to proceed to checkout.");
+        setPhoneError('');
+      }, 300);
     }
   };
 
-  // Calculate totals
+  const handleClosePaymentIframe = () => {
+    setShowPaymentIframe(false);
+    setPaymentUrl('');
+    setCurrentOrderId(null);
+    setIsIframeLoading(true);
+  };
+
+  const handleIframeLoad = () => {
+    setIsIframeLoading(false);
+  };
+
+  const handlePaymentChoice = (payNow) => {
+    setOrderDetails(prev => ({ ...prev, payNow }));
+    setModalStep(2);
+  };
+
+  const handlePlaceOrder = async () => {
+    // Validate phone number before proceeding
+    const phoneValidation = validatePhoneNumber(orderDetails.phone);
+    if (!phoneValidation.isValid) {
+      toast.error(phoneValidation.message);
+      return;
+    }
+
+    if (!orderDetails.name || !orderDetails.phone || !orderDetails.address) {
+      toast.error('Please fill in all required details (name, phone, address)');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // All amounts are in KES now
+      const totalInKES = cart.total;
+
+      // Format phone number to international format
+      const formattedPhone = validatePhoneNumber(orderDetails.phone).formatted;
+
+      // Create order first
+      const orderData = {
+        userId: user.currentUser._id,
+        name: orderDetails.name,
+        phone: formattedPhone.toString(), // Convert to string for database
+        email: orderDetails.email || user.currentUser.email,
+        address: orderDetails.address,
+        products: cart.products.map(product => ({
+          productId: product._id,
+          title: product.title,
+          quantity: product.quantity,
+          price: product.price, // Price in KES
+          img: product.img[0]
+        })),
+        total: totalInKES, // Total in KES
+        status: orderDetails.payNow ? 0 : 1, // 0 = pending payment, 1 = confirmed order
+      };
+
+      console.log('📦 Creating order with data:', orderData);
+      const orderResponse = await userRequest.post("/orders", orderData);
+      console.log('✅ Order created successfully:', orderResponse.data);
+      
+      if (orderDetails.payNow) {
+        // Proceed with payment in KES
+        const paymentData = {
+          email: orderDetails.email || user.currentUser.email,
+          reference: orderResponse.data._id, // Use order ID as reference
+          phone: formattedPhone.toString(), // Use formatted phone number
+          first_name: orderDetails.name.split(' ')[0],
+          last_name: orderDetails.name.split(' ').slice(1).join(' ') || 'Customer',
+          amount: totalInKES, // Send amount in KES
+          description: `Order for ${orderDetails.name} - ${cart.products.length} items`
+        };
+
+        console.log('💳 Making payment request with data:', paymentData);
+        console.log('🔗 Payment endpoint: /pesapal/payment');
+        console.log('💰 Amount in KES:', totalInKES);
+        console.log('📱 Formatted phone:', formattedPhone);
+        
+        const paymentResponse = await paymentRequest.post("/payment", paymentData);
+        console.log('✅ Payment response:', paymentResponse.data);
+        
+        if (paymentResponse.data) {
+          setCurrentOrderId(orderResponse.data._id);
+          setPaymentUrl(paymentResponse.data);
+          setShowPaymentIframe(true);
+          setIsIframeLoading(true);
+          handleCloseModal();
+        } else {
+          throw new Error('No redirect URL received from payment gateway');
+        }
+      } else {
+        // Order placed without immediate payment
+        toast.success('🎉 Order placed successfully! We will contact you for payment when your order is ready.');
+        dispatch(clearCart());
+        handleCloseModal();
+        navigate('/myorders');
+      }
+
+    } catch (error) {
+      console.error('❌ Order/Payment error:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      
+      if (error.response?.status === 400) {
+        toast.error('Failed to create order. Please try again.');
+      } else if (error.message.includes('redirect URL')) {
+        toast.error('Payment service temporarily unavailable. Your order has been placed - we will contact you for payment.');
+        dispatch(clearCart());
+        handleCloseModal();
+      } else {
+        toast.error('Something went wrong. Please try again or contact support.');
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Calculate totals in KES
   const subtotal = cart.total || 0;
-  const shipping = subtotal > 0 ? 10 : 0;
+  const shipping = subtotal > 0 ? 1500 : 0; // 1500 KES shipping
   const total = subtotal + shipping;
+
+  const renderModalContent = () => {
+    if (modalStep === 1) {
+      return (
+        <div className="text-center">
+          <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FaCreditCard className="w-8 h-8 text-rose-600" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-800 mb-4">Choose Payment Method</h3>
+          <p className="text-gray-600 mb-6">
+            How would you like to complete your order?
+          </p>
+
+          <div className="space-y-4">
+            <button
+              onClick={() => handlePaymentChoice(true)}
+              className="w-full bg-rose-600 hover:bg-rose-700 text-white py-4 rounded-xl font-semibold transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center"
+            >
+              <FaCreditCard className="mr-3" />
+              Pay Now - Secure Payment (KES {total.toLocaleString()})
+            </button>
+
+            <button
+              onClick={() => handlePaymentChoice(false)}
+              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 py-4 rounded-xl font-semibold transition-all duration-300 transform hover:scale-[1.02] border-2 border-dashed border-gray-300 flex items-center justify-center"
+            >
+              <FaBox className="mr-3" />
+              Pay Later - When Order is Ready (KES {total.toLocaleString()})
+            </button>
+          </div>
+
+          <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div className="flex items-start">
+              <FaInfoCircle className="w-5 h-5 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
+              <div className="text-left">
+                <p className="text-sm text-yellow-800 font-semibold mb-1">Important Notice</p>
+                <p className="text-xs text-yellow-700">
+                  If you choose "Pay Later", our team will contact you for payment confirmation 
+                  before your order is dispatched. Your goods will be prepared but will only be 
+                  shipped after payment is completed.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleCloseModal}
+            className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-semibold transition-colors duration-300 mt-4"
+          >
+            Cancel
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        {/* Header with back button */}
+        <div className="flex items-center justify-between mb-6">
+          <button 
+            onClick={() => setModalStep(1)}
+            className="flex items-center text-gray-600 hover:text-gray-800 transition-colors duration-200"
+            disabled={isProcessing}
+          >
+            <FaArrowLeft className="mr-2" />
+            Back
+          </button>
+          <h3 className="text-2xl font-bold text-gray-800">Complete Your Order</h3>
+          <button 
+            onClick={handleCloseModal}
+            className="text-gray-400 hover:text-gray-600 text-xl transition-transform duration-200 hover:scale-110"
+            disabled={isProcessing}
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Payment method reminder */}
+        <div className={`mb-6 p-3 rounded-lg ${
+          orderDetails.payNow ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'
+        }`}>
+          <div className="flex items-center">
+            {orderDetails.payNow ? (
+              <>
+                <FaCreditCard className="w-4 h-4 text-green-600 mr-2" />
+                <span className="text-sm font-semibold text-green-800">Paying Now</span>
+                <span className="text-sm text-green-700 ml-2">- Secure payment via Pesapal (KES {total.toLocaleString()})</span>
+              </>
+            ) : (
+              <>
+                <FaBox className="w-4 h-4 text-blue-600 mr-2" />
+                <span className="text-sm font-semibold text-blue-800">Paying Later</span>
+                <span className="text-sm text-blue-700 ml-2">- We'll contact you when order is ready (KES {total.toLocaleString()})</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {/* Form fields */}
+          {[
+            { label: 'Full Name *', name: 'name', type: 'text', placeholder: 'Enter your full name', required: true },
+            { 
+              label: 'Phone Number *', 
+              name: 'phone', 
+              type: 'tel', 
+              placeholder: 'e.g., 254727632051', 
+              required: true 
+            },
+            { label: 'Email Address', name: 'email', type: 'email', placeholder: 'Enter your email (optional)', required: false },
+          ].map((field, index) => (
+            <div key={field.name}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {field.label}
+              </label>
+              <input
+                type={field.type}
+                name={field.name}
+                value={orderDetails[field.name]}
+                onChange={handleInputChange}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all duration-200 ${
+                  field.name === 'phone' && phoneError ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder={field.placeholder}
+                required={field.required}
+                inputMode={field.name === 'phone' ? 'numeric' : 'text'}
+                pattern={field.name === 'phone' ? '[0-9]*' : undefined}
+              />
+              {field.name === 'phone' && phoneError && (
+                <p className="text-red-500 text-xs mt-1">{phoneError}</p>
+              )}
+              {field.name === 'phone' && !phoneError && orderDetails.phone && (
+                <p className="text-green-500 text-xs mt-1">✓ Valid Kenyan number</p>
+              )}
+              {field.name === 'phone' && (
+                <p className="text-gray-500 text-xs mt-1">
+                  Format: 2547XXXXXXXX (numbers only)
+                </p>
+              )}
+            </div>
+          ))}
+
+          {/* Address field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Delivery Address *
+            </label>
+            <textarea
+              name="address"
+              value={orderDetails.address}
+              onChange={handleInputChange}
+              rows={3}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all duration-200"
+              placeholder="e.g., 1st Avenue, Kinoo, Kiambu"
+              required
+            />
+            <p className="text-gray-500 text-xs mt-1">
+              Example: 1st Avenue, Kinoo, Kiambu
+            </p>
+          </div>
+
+          {/* Order Summary */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-gray-800 mb-2">Order Summary</h4>
+            <div className="space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span>Items ({cart.quantity})</span>
+                <span>KES {subtotal.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Shipping</span>
+                <span>KES {shipping.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between font-semibold border-t pt-2">
+                <span>Total</span>
+                <span className="text-rose-700">KES {total.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Buttons */}
+        <div className="mt-6 space-y-3">
+          <button
+            onClick={handlePlaceOrder}
+            disabled={isProcessing || phoneError}
+            className="w-full bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center transform hover:scale-[1.02] disabled:scale-100"
+          >
+            {isProcessing ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                Processing...
+              </>
+            ) : orderDetails.payNow ? (
+              <>
+                <FaCreditCard className="mr-2" />
+                Pay Now - KES {total.toLocaleString()}
+              </>
+            ) : (
+              <>
+                <FaBox className="mr-2" />
+                Place Order (Pay Later)
+              </>
+            )}
+          </button>
+          
+          <button
+            onClick={handleCloseModal}
+            disabled={isProcessing}
+            className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-[1.02] disabled:scale-100"
+          >
+            Cancel
+          </button>
+        </div>
+
+        {/* Security note */}
+        <div className="mt-4 text-center">
+          <p className="text-xs text-gray-500">
+            🔒 Your information is secure. {orderDetails.payNow ? 
+            'You will be redirected to secure payment.' : 
+            'We will contact you for payment when your order is ready.'}
+          </p>
+        </div>
+      </>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-white pt-24 pb-8 px-4 sm:px-6 lg:px-8">
-      {/* Added pt-24 to push content below the fixed navbar */}
       <div className="max-w-6xl mx-auto">
         <ToastContainer
           position="top-right"
@@ -78,6 +530,83 @@ const Cart = () => {
           theme="light"
         />
 
+        {/* Payment Iframe Modal */}
+        {showPaymentIframe && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black bg-opacity-50">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 className="text-xl font-bold text-gray-800">Complete Your Payment</h3>
+                <button 
+                  onClick={handleClosePaymentIframe}
+                  className="text-gray-400 hover:text-gray-600 text-xl transition-transform duration-200 hover:scale-110"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+              <div className="flex-1 p-4 relative">
+                {isIframeLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+                    <div className="text-center">
+                      <FaSpinner className="animate-spin text-rose-600 text-4xl mb-4 mx-auto" />
+                      <p className="text-gray-600">Loading payment gateway...</p>
+                    </div>
+                  </div>
+                )}
+                <iframe
+                  src={paymentUrl}
+                  className="w-full h-full rounded-lg border border-gray-200"
+                  title="Pesapal Payment"
+                  sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
+                  onLoad={handleIframeLoad}
+                  style={{ display: isIframeLoading ? 'none' : 'block' }}
+                />
+              </div>
+              <div className="p-4 bg-gray-50 border-t border-gray-200">
+                <p className="text-sm text-gray-600 text-center">
+                  🔒 Secure payment processed by Pesapal. Do not close this window until payment is complete.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Order Modal with Smooth Animations */}
+        {showOrderModal && (
+          <div className={`
+            fixed inset-0 flex items-center justify-center z-40 p-4
+            transition-all duration-300 ease-out
+            ${isModalVisible ? 'opacity-100' : 'opacity-0'}
+          `}>
+            {/* Backdrop with fade animation */}
+            <div 
+              className={`
+                absolute inset-0 bg-black transition-opacity duration-300
+                ${isModalVisible ? 'opacity-50' : 'opacity-0'}
+              `}
+              onClick={handleCloseModal}
+            />
+            
+            {/* Modal content with scale animation - different sizes for different steps */}
+            <div className={`
+              relative bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto
+              transform transition-all duration-300 ease-out
+              ${isModalVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}
+              ${modalStep === 1 ? 'max-w-sm w-full' : 'max-w-md w-full'}
+            `}>
+              <div className="p-6">
+                {/* Animation wrapper for step content */}
+                <div key={modalStep} className={`
+                  transform transition-all duration-500 ease-out
+                  ${isModalVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                `}>
+                  {renderModalContent()}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Rest of the cart component */}
         {/* Header */}
         <div className="flex items-center mb-8">
           <Link to="/products" className="flex items-center text-rose-600 hover:text-rose-700 transition-colors duration-300 mr-4">
@@ -128,7 +657,7 @@ const Cart = () => {
                 {cart.products?.map((product, index) => (
                   <div className="flex flex-col sm:flex-row items-start gap-6 pb-6 border-b border-rose-50 last:border-0" key={index}>
                     <img
-                      src={product.img}
+                      src={product.img[0]}
                       alt={product.title}
                       className="w-full sm:w-28 h-28 object-cover rounded-xl shadow-sm"
                     />
@@ -168,9 +697,9 @@ const Cart = () => {
                         </div>
                         
                         <div className="text-right">
-                          <p className="text-lg font-bold text-rose-700">${(product.price * product.quantity).toFixed(2)}</p>
+                          <p className="text-lg font-bold text-rose-700">KES {(product.price * product.quantity).toLocaleString()}</p>
                           {product.quantity > 1 && (
-                            <p className="text-xs text-gray-500">${product.price} each</p>
+                            <p className="text-xs text-gray-500">KES {product.price.toLocaleString()} each</p>
                           )}
                         </div>
                       </div>
@@ -182,39 +711,40 @@ const Cart = () => {
 
             {/* Order Summary */}
             <div className="w-full lg:w-96">
-              <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-28"> {/* Changed top value to account for navbar */}
+              <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-28">
                 <h2 className="text-xl font-semibold text-gray-800 mb-6 pb-4 border-b border-rose-100">Order Summary</h2>
 
                 <div className="space-y-4 mb-6">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal ({cart.quantity} items)</span>
-                    <span className="font-medium">${subtotal.toFixed(2)}</span>
+                    <span className="font-medium">KES {subtotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Shipping</span>
-                    <span className="font-medium">${shipping.toFixed(2)}</span>
+                    <span className="font-medium">KES {shipping.toLocaleString()}</span>
                   </div>
-                  {subtotal > 0 && subtotal < 50 && (
+                  {subtotal > 0 && subtotal < 7500 && ( // 7500 KES = ~50 USD equivalent
                     <div className="text-sm text-rose-600 bg-rose-50 p-3 rounded-lg mt-2">
-                      <span className="font-medium">You're ${(50 - subtotal).toFixed(2)} away from free shipping!</span>
+                      <span className="font-medium">You're KES {(7500 - subtotal).toLocaleString()} away from free shipping!</span>
                     </div>
                   )}
                   <div className="flex justify-between pt-4 border-t border-rose-100">
                     <span className="text-lg font-semibold">Total</span>
-                    <span className="text-lg font-semibold text-rose-700">${total.toFixed(2)}</span>
+                    <span className="text-lg font-semibold text-rose-700">KES {total.toLocaleString()}</span>
                   </div>
                 </div>
 
                 <button 
-                  onClick={handleCheckout}
+                  onClick={handleProceedToCheckout}
                   className="w-full bg-rose-600 hover:bg-rose-700 text-white py-4 rounded-full font-semibold transition-all duration-300 transform hover:scale-[1.02] shadow-lg mb-4 flex items-center justify-center"
                 >
+                  <FaBox className="mr-2" />
                   Proceed to Checkout
                 </button>
                 
                 {!user.currentUser && (
                   <p className="text-sm text-center text-gray-500 mt-4">
-                    <Link to="/login" className="text-rose-600 hover:underline font-medium">Sign in</Link> to checkout
+                    <Link to="/login" className="text-rose-600 hover:underline font-medium">Sign in</Link> to place your order
                   </p>
                 )}
 
@@ -243,7 +773,7 @@ const Cart = () => {
                   <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                   </svg>
-                  Secure checkout. Your information is protected.
+                  Secure checkout. Pay now or when your order is ready!
                 </p>
               </div>
             </div>

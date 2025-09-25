@@ -34,7 +34,7 @@ const Products = () => {
           <div className="flex items-center">
             <img
               className="h-12 w-12 rounded-full object-cover mr-2"
-              src={params.row.img}
+              src={params.row.img[0]} // Accessing the first image from the array
               alt=""
               height="100px"
               width="100px"

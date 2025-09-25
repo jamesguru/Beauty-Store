@@ -6,7 +6,7 @@ const Product = ({ product }) => {
       {/* Product Image with Hover Effect */}
       <div className="relative h-80 w-full overflow-hidden">
         <img
-          src={product.img}
+          src={product.img[0]}
           alt={product.title}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
