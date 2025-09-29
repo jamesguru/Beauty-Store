@@ -12,12 +12,14 @@ import ProductList from "./pages/ProductList";
 import Order from "./pages/Order";
 import {useSelector } from "react-redux";
 import Timetable from "./components/Timetable";
+import ScrollToTop from "./components/ScrollToTop"; // Add this import
 
 function App() {
   const user = useSelector((state) => state.user);
   const Layout = () => {
     return (
       <div>
+        <ScrollToTop /> {/* Add this line */}
         <Navbar />
         <Outlet />
         <Timetable />

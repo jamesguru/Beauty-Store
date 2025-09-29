@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Dubois Beauty Skincare Timetable</title>
+    <style type="text/css">
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #F8F5F0 0%, #FFF 50%, #F8F5F0 100%);
+            color: #333333;
+            line-height: 1.6;
+        }
+
+        .email-container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(139, 115, 85, 0.15);
+            border: 1px solid #E8E2D6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #8B7355 0%, #A89276 50%, #8B7355 100%);
+            padding: 50px 40px;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.1"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="white"/><circle cx="20" cy="20" r="0.5" fill="white"/><circle cx="80" cy="80" r="0.7" fill="white"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        }
+
+        .brand-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .brand-subtitle {
+            font-size: 16px;
+            font-weight: 300;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            margin: 20px 0 10px 0;
+            font-size: 36px;
+            font-weight: 600;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .header p {
+            margin: 0;
+            opacity: 0.95;
+            font-size: 18px;
+            font-weight: 300;
+        }
+
+        .content {
+            padding: 50px 40px;
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section-title {
+            color: #8B7355;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 25px;
+            font-family: 'Playfair Display', serif;
+            position: relative;
+            padding-bottom: 15px;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #8B7355 0%, #D4AF37 100%);
+            border-radius: 2px;
+        }
+
+        .profile-card {
+            background: linear-gradient(135deg, #F8F5F0 0%, #FFF 100%);
+            border: 1px solid #E8E2D6;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 25px rgba(139, 115, 85, 0.08);
+        }
+
+        .profile-item {
+            display: flex;
+            margin-bottom: 15px;
+            align-items: flex-start;
+        }
+
+        .profile-label {
+            font-weight: 600;
+            color: #8B7355;
+            min-width: 140px;
+            font-size: 15px;
+        }
+
+        .profile-value {
+            color: #333;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .product-card {
+            background: white;
+            border: 1px solid #E8E2D6;
+            border-radius: 16px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(139, 115, 85, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #8B7355 0%, #D4AF37 100%);
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 35px rgba(139, 115, 85, 0.15);
+        }
+
+        .product-category {
+            color: #D4AF37;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            display: inline-block;
+            background: rgba(212, 175, 55, 0.1);
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+
+        .product-name {
+            font-weight: 700;
+            font-size: 18px;
+            color: #2D3748;
+            margin-bottom: 12px;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .product-desc {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .product-benefits {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .benefit-tag {
+            background: rgba(139, 115, 85, 0.1);
+            color: #8B7355;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .schedule-container {
+            background: white;
+            border: 1px solid #E8E2D6;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(139, 115, 85, 0.08);
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .schedule-table th {
+            background: linear-gradient(135deg, #8B7355 0%, #A89276 100%);
+            color: white;
+            padding: 20px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .schedule-table td {
+            padding: 20px;
+            border-bottom: 1px solid #F0ECE3;
+        }
+
+        .schedule-table tr:nth-child(even) {
+            background: #FCFAF7;
+        }
+
+        .schedule-table tr:hover {
+            background: #F8F5F0;
+        }
+
+        .day-header {
+            font-weight: 700;
+            color: #8B7355;
+            font-size: 16px;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .routine-time {
+            font-weight: 600;
+            color: #D4AF37;
+            font-size: 12px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .instructions {
+            background: linear-gradient(135deg, #FCFAF7 0%, #FFF 100%);
+            padding: 35px;
+            border-radius: 16px;
+            border-left: 4px solid #D4AF37;
+            box-shadow: 0 8px 25px rgba(139, 115, 85, 0.05);
+        }
+
+        .instructions h3 {
+            color: #8B7355;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-family: 'Playfair Display', serif;
+            font-size: 20px;
+        }
+
+        .instructions ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 12px;
+            line-height: 1.7;
+            color: #555;
+        }
+
+        .instructions li strong {
+            color: #8B7355;
+        }
+
+        .attachment-note {
+            background: linear-gradient(135deg, #E8F5E8 0%, #F0F8F0 100%);
+            border: 1px solid #C8E6C9;
+            border-radius: 16px;
+            padding: 30px;
+            margin: 40px 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .attachment-note::before {
+            content: '📎';
+            font-size: 48px;
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            opacity: 0.1;
+        }
+
+        .attachment-note h3 {
+            color: #2E7D32;
+            margin-top: 0;
+            font-family: 'Playfair Display', serif;
+            font-size: 22px;
+        }
+
+        .attachment-note p {
+            color: #4CAF50;
+            font-size: 16px;
+            margin: 10px 0 0 0;
+            font-weight: 500;
+        }
+
+        .cta-section {
+            text-align: center;
+            padding: 40px 0 20px 0;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #8B7355 0%, #D4AF37 100%);
+            color: white;
+            padding: 18px 40px;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(139, 115, 85, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(139, 115, 85, 0.4);
+        }
+
+        .cta-button:hover::before {
+            left: 100%;
+        }
+
+        .footer {
+            background: linear-gradient(135deg, #2D3748 0%, #4A5568 100%);
+            color: #CBD5E0;
+            text-align: center;
+            padding: 50px 40px;
+            font-size: 14px;
+            position: relative;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #D4AF37, transparent);
+        }
+
+        .footer-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: #D4AF37;
+            margin-bottom: 15px;
+        }
+
+        .footer p {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+
+        .footer-links {
+            margin: 25px 0;
+        }
+
+        .footer-links a {
+            color: #D4AF37;
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .social-links {
+            margin: 20px 0;
+        }
+
+        .social-links a {
+            display: inline-block;
+            margin: 0 10px;
+            color: #CBD5E0;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .social-links a:hover {
+            color: #D4AF37;
+        }
+
+        @media (max-width: 600px) {
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .header {
+                padding: 40px 20px;
+            }
+            
+            .product-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .profile-item {
+                flex-direction: column;
+            }
+            
+            .profile-label {
+                min-width: auto;
+                margin-bottom: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="brand-logo">DUBOIS</div>
+            <div class="brand-subtitle">Beauty</div>
+            <h1>✨ Your Luxury Skincare Journey Begins</h1>
+            <p>Personalized timetable crafted exclusively for <%= name %></p>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h2 class="section-title">Your Skin Profile</h2>
+                <div class="profile-card">
+                    <div class="profile-item">
+                        <div class="profile-label">Skin Type</div>
+                        <div class="profile-value"><%= skinType.charAt(0).toUpperCase() + skinType.slice(1) %></div>
+                    </div>
+                    <div class="profile-item">
+                        <div class="profile-label">Primary Concerns</div>
+                        <div class="profile-value"><%= concerns.map(c => c.charAt(0).toUpperCase() + c.slice(1)).join(', ') %></div>
+                    </div>
+                    <div class="profile-item">
+                        <div class="profile-label">Routine Schedule</div>
+                        <div class="profile-value"><%= morningTime %> (AM) • <%= eveningTime %> (PM)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Your Dubois Beauty Products</h2>
+                <div class="product-grid">
+                    <% Object.entries(products).forEach(([category, product]) => { %>
+                        <% if (category !== 'serums') { %>
+                            <div class="product-card">
+                                <div class="product-category"><%= category.charAt(0).toUpperCase() + category.slice(1) %></div>
+                                <div class="product-name"><%= product.product %></div>
+                                <div class="product-desc"><%= product.description %></div>
+                                <% if (product.benefits && product.benefits.length > 0) { %>
+                                    <div class="product-benefits">
+                                        <% product.benefits.forEach(benefit => { %>
+                                            <span class="benefit-tag"><%= benefit %></span>
+                                        <% }) %>
+                                    </div>
+                                <% } %>
+                            </div>
+                        <% } %>
+                    <% }) %>
+                </div>
+
+                <% if (products.serums && products.serums.length > 0) { %>
+                    <h3 style="color: #8B7355; margin-bottom: 20px; font-family: 'Playfair Display', serif; font-size: 22px;">Targeted Treatments</h3>
+                    <div class="product-grid">
+                        <% products.serums.forEach(serum => { %>
+                            <div class="product-card">
+                                <div class="product-category">Treatment Serum</div>
+                                <div class="product-name"><%= serum.product %></div>
+                                <div class="product-desc"><%= serum.description %></div>
+                                <% if (serum.benefits && serum.benefits.length > 0) { %>
+                                    <div class="product-benefits">
+                                        <% serum.benefits.forEach(benefit => { %>
+                                            <span class="benefit-tag"><%= benefit %></span>
+                                        <% }) %>
+                                    </div>
+                                <% } %>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } %>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">7-Day Luxury Skincare Schedule</h2>
+                <div class="schedule-container">
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th>Day</th>
+                                <th>Morning Routine</th>
+                                <th>Evening Routine</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% Object.entries(weeklySchedule).forEach(([day, routines]) => { %>
+                                <tr>
+                                    <td class="day-header"><%= day.charAt(0).toUpperCase() + day.slice(1) %></td>
+                                    <td>
+                                        <div class="routine-time"><%= morningTime %></div>
+                                        <%= routines.am %>
+                                    </td>
+                                    <td>
+                                        <div class="routine-time"><%= eveningTime %></div>
+                                        <%= routines.pm %>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Application Guide</h2>
+                <div class="instructions">
+                    <h3>🌅 Morning Ritual</h3>
+                    <ul>
+                        <% instructions.morning.forEach(instruction => { %>
+                            <li><%= instruction %></li>
+                        <% }) %>
+                    </ul>
+
+                    <h3>🌙 Evening Ritual</h3>
+                    <ul>
+                        <% instructions.evening.forEach(instruction => { %>
+                            <li><%= instruction %></li>
+                        <% }) %>
+                    </ul>
+
+                    <h3>⭐ Weekly Treatments</h3>
+                    <ul>
+                        <% instructions.weekly.forEach(instruction => { %>
+                            <li><%= instruction %></li>
+                        <% }) %>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="attachment-note">
+                <h3>📎 Your Complete Skincare Portfolio</h3>
+                <p>Your comprehensive Dubois Beauty skincare timetable is attached as a beautifully designed PDF. Download and print it for elegant reference!</p>
+            </div>
+
+            <div class="cta-section">
+                <a href="#" class="cta-button">Explore Dubois Beauty Collection</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="footer-logo">DUBOIS BEAUTY</div>
+            <p>Luxury skincare, personalized for your unique beauty journey</p>
+            
+            <div class="footer-links">
+                <a href="#">Our Story</a>
+                <a href="#">Skincare Consultation</a>
+                <a href="#">Contact Experts</a>
+            </div>
+            
+            <div class="social-links">
+                <a href="#">Instagram</a>
+                <a href="#">Facebook</a>
+                <a href="#">Pinterest</a>
+            </div>
+            
+            <p>&copy; 2024 Dubois Beauty. All rights reserved.</p>
+            <p>This routine is expertly crafted based on your unique skin profile.</p>
+            <p>For medical skin concerns, we recommend consulting a dermatologist.</p>
+            <p><a href="#">Unsubscribe</a> | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+        </div>
+    </div>
+</body>
+</html>
