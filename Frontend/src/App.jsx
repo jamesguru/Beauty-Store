@@ -11,8 +11,10 @@ import Register from "./pages/Register";
 import ProductList from "./pages/ProductList";
 import Order from "./pages/Order";
 import {useSelector } from "react-redux";
-import Timetable from "./components/Timetable";
+import Timetable from "./pages/Timetable";
 import ScrollToTop from "./components/ScrollToTop"; // Add this import
+import Packages from "./pages/Package";
+import BundleDetail from "./pages/PackageDetailedPage";
 
 function App() {
   const user = useSelector((state) => state.user);
@@ -22,7 +24,6 @@ function App() {
         <ScrollToTop /> {/* Add this line */}
         <Navbar />
         <Outlet />
-        <Timetable />
         <Footer />
       </div>
     );
@@ -49,6 +50,16 @@ function App() {
           path:"/create-account",
           element: <Register />
         },
+         {
+          path:"/packages",
+          element: <Packages />
+        },
+
+         {
+          path:"/skincare-timetable",
+          element: <Timetable />
+        },
+
         {
           path:"/myaccount",
           element: user?.currentUser ? <Myaccount /> : <Home />
@@ -56,6 +67,10 @@ function App() {
         {
           path:"/product/:productId",
           element: <Product />
+        },
+         {
+          path:"/package/:packageId",
+          element: <BundleDetail />
         },
         {
           path:"/products/:searchterm",

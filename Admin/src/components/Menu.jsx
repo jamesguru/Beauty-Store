@@ -10,82 +10,114 @@ import {
   FaSignOutAlt,
   FaUser,
   FaUsers,
+  FaGift,
+  FaPlus,
+  FaBoxOpen
 } from 'react-icons/fa';
-import {Link} from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const Menu = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const menuItems = [
+    { icon: FaHome, label: 'Home', path: '/home', color: 'text-blue-500' },
+    { icon: FaUsers, label: 'Users', path: '/users', color: 'text-purple-500' },
+    { icon: FaBox, label: 'Products', path: '/products', color: 'text-orange-500' },
+    { icon: FaGift, label: 'Bundles', path: '/bundles', color: 'text-pink-500' },
+    { icon: FaClipboardList, label: 'Orders', path: '/orders', color: 'text-red-500' },
+    { icon: FaElementor, label: 'Banners', path: '/banners', color: 'text-indigo-500' },
+    { icon: FaCog, label: 'Settings', path: '/settings', color: 'text-gray-500' },
+    { icon: FaChartBar, label: 'Charts', path: '/charts', color: 'text-teal-500' },
+    { icon: FaClipboard, label: 'All logs', path: '/logs', color: 'text-cyan-500' },
+  ];
+
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+
+  const handleLogout = () => {
+    // Clear all user data from localStorage
+    localStorage.removeItem('user');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    
+    // Navigate to login page
+    navigate('/');
+  };
+
   return (
-    <div className="h-[100vh] bg-gray-100 p-[20px] w-[350px] shadow-lg">
-      <ul className="flex flex-col items-start justify-start mt-[20px] pl-[20px]">
+    <div className="h-[100vh] bg-gradient-to-b from-gray-900 to-gray-800 p-6 w-80 shadow-2xl border-r border-gray-700">
+      {/* Header */}
+      <div className="text-center mb-8 pt-4">
+        <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">
+          <FaGift className="text-white text-2xl" />
+        </div>
+        <h1 className="text-2xl font-bold text-white">Dubois Beauty</h1>
+        <p className="text-gray-400 text-sm">Admin Dashboard</p>
+      </div>
 
-        <li className="flex items-center text-[20px] cursor-pointer mt-[20px] transition-colors duration-100 hover:bg-pink-300">
-          <FaHome className="mr-[15px] text-[#ef93db]" />
-          Home
-        </li>
-        <li className="flex items-center text-[20px] cursor-pointer mt-[20px] transition-colors duration-100">
-          <FaUser className="mr-[15px] text-[#ef93db]" />
-          Profile
-        </li>
+      {/* Navigation Menu */}
+      <nav className="space-y-1">
+        {menuItems.map((item, index) => {
+          const Icon = item.icon;
+          const active = isActive(item.path);
+          
+          return (
+            <Link key={index} to={item.path}>
+              <div className={`
+                flex items-center px-4 py-3 rounded-xl transition-all duration-300 group cursor-pointer
+                ${active 
+                  ? 'bg-white/10 shadow-lg border-l-4 border-pink-500' 
+                  : 'hover:bg-white/5 hover:border-l-4 hover:border-gray-600'
+                }
+              `}>
+                <div className={`
+                  w-10 h-10 rounded-lg flex items-center justify-center mr-3 transition-all duration-300
+                  ${active 
+                    ? 'bg-pink-500 shadow-lg' 
+                    : 'bg-gray-700 group-hover:bg-gray-600'
+                  }
+                `}>
+                  <Icon className={`
+                    text-lg transition-all duration-300
+                    ${active ? 'text-white' : item.color}
+                  `} />
+                </div>
+                <div className="flex-1">
+                  <p className={`
+                    font-medium transition-all duration-300
+                    ${active ? 'text-white' : 'text-gray-300 group-hover:text-white'}
+                  `}>
+                    {item.label}
+                  </p>
+                </div>
+                {active && (
+                  <div className="w-2 h-2 bg-pink-400 rounded-full animate-pulse"></div>
+                )}
+              </div>
+            </Link>
+          );
+        })}
+      </nav>
 
-        <hr className="w-full my-[20px] border-gray-300" />
-
-        <Link to="/users">
-
-          <li className="flex items-center text-[20px] cursor-pointer mt-[20px] transition-colors duration-100">
-            <FaUsers className="mr-[15px] text-[#ef93db]" />
-            Users
-          </li>
-        </Link>
-
-        <Link to="/products">
-          <li className="flex items-center text-[20px] cursor-pointer mt-[20px] transition-colors duration-100">
-            <FaBox className="mr-[15px] text-[#ef93db]" />
-            Products
-          </li>
-
-        </Link>
-
-        <Link to="/orders">
-          <li className="flex items-center text-[20px] cursor-pointer mt-[20px] transition-colors duration-100">
-            <FaClipboardList className="mr-[15px] text-[#ef93db]" />
-            Orders
-          </li>
-        </Link>
-
-        <hr className="w-full my-[20px] border-gray-300" />
-
-       <Link to="/banners">
-       <li className="flex items-center text-[20px] cursor-pointer mt-[20px] transition-colors duration-100">
-          <FaElementor className="mr-[15px] text-[#ef93db]" />
-          Banners
-        </li>
-        
-       </Link>
-        <li className="flex items-center text-[20px] cursor-pointer mt-[20px] transition-colors duration-100">
-          <FaCog className="mr-[15px] text-[#ef93db]" />
-          Settings
-        </li>
-
-        <li className="flex items-center text-[20px] cursor-pointer mt-[20px] transition-colors duration-100">
-          <FaHdd className="mr-[15px] text-[#ef93db]" />
-          Backups
-        </li>
-        <hr className="w-full my-[20px] border-gray-300" />
-
-        <li className="flex items-center text-[20px] cursor-pointer mt-[20px] transition-colors duration-100">
-          <FaChartBar className="mr-[15px] text-[#ef93db]" />
-          Charts
-        </li>
-
-        <li className="flex items-center text-[20px] cursor-pointer mt-[20px] transition-colors duration-100">
-          <FaClipboard className="mr-[15px] text-[#ef93db]" />
-          All logs
-        </li>
-        <li className="flex items-center text-[20px] cursor-pointer mt-[20px] transition-colors duration-100">
-          <FaSignOutAlt className="mr-[15px] text-[#ef93db]" />
-          Logout
-        </li>
-      </ul>
+      {/* Logout Section */}
+      <div className="absolute bottom-6 left-6 right-6">
+        <div className="border-t border-gray-100 pt-4">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center px-4 py-3 rounded-xl transition-all duration-300 cursor-pointer group hover:bg-red-50/10"
+          >
+            <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+              <FaSignOutAlt className="text-white text-lg" />
+            </div>
+            <div className="text-left">
+              <p className="text-white font-medium group-hover:text-red-200 transition-colors duration-300">Logout</p>
+              <p className="text-gray-400 text-xs group-hover:text-red-300 transition-colors duration-300">Secure sign out</p>
+            </div>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

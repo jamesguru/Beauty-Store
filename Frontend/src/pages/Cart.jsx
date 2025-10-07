@@ -609,7 +609,7 @@ const Cart = () => {
         {/* Rest of the cart component */}
         {/* Header */}
         <div className="flex items-center mb-8">
-          <Link to="/products" className="flex items-center text-rose-600 hover:text-rose-700 transition-colors duration-300 mr-4">
+          <Link to="/" className="flex items-center text-rose-600 hover:text-rose-700 transition-colors duration-300 mr-4">
             <FaArrowLeft className="mr-2" />
             Continue Shopping
           </Link>

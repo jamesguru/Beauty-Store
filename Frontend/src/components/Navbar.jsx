@@ -50,10 +50,11 @@ const Navbar = () => {
           {/* Logo */}
           <Link to="/" className="flex-shrink-0 z-10">
             <div className="cursor-pointer transition-transform duration-300 hover:scale-105 flex items-center">
-              <div className="bg-rose-400 h-10 w-10 rounded-full flex items-center justify-center mr-3 shadow-lg">
-                <span className="text-white font-bold text-xl">DB</span>
-              </div>
-              <span className="text-2xl font-serif font-bold text-rose-700">Dubois Beauty</span>
+              <img 
+                src="https://res.cloudinary.com/dap91fhxh/image/upload/v1759863437/Screenshot_from_2025-10-07_21-56-04_sspduo.png" 
+                alt="Dubois Beauty" 
+                className="h-12 w-auto object-contain"
+              />
             </div>
           </Link>
 

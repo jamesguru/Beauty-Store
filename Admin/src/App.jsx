@@ -7,6 +7,15 @@ import Orders from './pages/Orders';
 import Banners from './pages/Banners';
 import NewProduct from './pages/NewProduct';
 import Product from './pages/Product';
+import Bundles from './pages/Bundle';
+import CreateBundle from './pages/NewBundle';
+import Login from './pages/Login';
+
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const user = localStorage.getItem("user");
+  return user ? children : <Login />;
+};
 
 function App () {
   const Layout = () => {
@@ -15,7 +24,7 @@ function App () {
         <div>
           <Menu />
         </div>
-        <div>
+        <div className="flex-1">
           <Outlet />
         </div>
       </div>
@@ -25,10 +34,14 @@ function App () {
   const router = createBrowserRouter ([
     {
       path: '/',
-      element: <Layout />,
+      element: <Login />,
+    },
+    {
+      path: '/',
+      element: <ProtectedRoute><Layout /></ProtectedRoute>,
       children: [
         {
-          path: '/',
+          path: '/home',
           element: <Home />,
         },
         {
@@ -42,6 +55,14 @@ function App () {
         {
           path: '/orders',
           element: <Orders />,
+        },
+        {
+          path: '/bundles',
+          element: <Bundles />,
+        },
+        {
+          path: '/bundles/create',
+          element: <CreateBundle />,
         },
         {
           path: '/banners',

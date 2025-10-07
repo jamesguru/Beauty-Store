@@ -162,6 +162,16 @@ const Banner = () => {
     navigate("/about");
   };
 
+  const handleCreateTimetable = () => {
+    setShowPopup(false);
+    navigate("/skincare-timetable");
+  };
+
+  const handleCreateCustomPackage = () => {
+    setShowPopup(false);
+    navigate("/packages");
+  };
+
   if (!bannerData) {
     return (
       <section className="bg-gradient-to-r from-pink-100 via-white to-pink-50 py-24 px-8 min-h-screen flex items-center justify-center">
@@ -175,20 +185,20 @@ const Banner = () => {
 
   return (
     <>
-      {/* Marketing Popup */}
+      {/* Larger Popup with GIF */}
       {showPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-6">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden transform animate-scale-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4">
+          <div className="bg-gradient-to-br from-white to-pink-50 rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden transform animate-scale-in border-2 border-white/20 backdrop-blur-sm">
             {/* Close Button */}
             <button
               onClick={closePopup}
-              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white hover:bg-gray-100 flex items-center justify-center transition-colors shadow-lg border border-gray-200"
+              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center transition-all duration-300 shadow-lg border border-pink-200 hover:scale-110"
             >
-              <span className="text-gray-700 text-xl font-bold">×</span>
+              <span className="text-gray-700 text-xl font-light">×</span>
             </button>
             
-            {/* GIF Section - Using beauty product GIF */}
-            <div className="relative h-64 bg-gradient-to-br from-pink-400 via-purple-500 to-indigo-600">
+            {/* GIF Section */}
+            <div className="relative h-48 bg-gradient-to-r from-pink-400 to-purple-500 overflow-hidden">
               <img 
                 src="https://i.pinimg.com/originals/4f/05/f9/4f05f907a1486c47b69fac1d4ab1f3a4.gif"
                 alt="Discover Beauty Products"
@@ -197,63 +207,66 @@ const Banner = () => {
                   e.target.src = "https://i.pinimg.com/originals/4f/05/f9/4f05f907a1486c47b69fac1d4ab1f3a4.gif";
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
-              <div className="absolute bottom-4 left-0 right-0 text-center">
-                <span className="bg-white/90 backdrop-blur-sm text-pink-600 px-4 py-2 rounded-full text-sm font-bold shadow-lg">
-                  Discover Your Beauty Match
-                </span>
-              </div>
+           
             </div>
             
             {/* Content Section */}
-            <div className="p-8 text-center">
-              <div className="flex justify-center mb-4">
-                <div className="w-2 h-2 bg-pink-500 rounded-full mx-1"></div>
-                <div className="w-2 h-2 bg-purple-500 rounded-full mx-1"></div>
-                <div className="w-2 h-2 bg-indigo-500 rounded-full mx-1"></div>
-              </div>
-              
-              <h3 className="text-3xl font-bold text-gray-900 mb-3">
-                Find Your Perfect Beauty Products
+            <div className="p-8">
+              <h3 className="text-3xl font-bold text-gray-900 mb-3 text-center">
+                Begin Your Beauty Journey
               </h3>
               
-              <p className="text-gray-700 mb-6 leading-relaxed text-lg">
-                <strong>Let us guide your beauty journey!</strong> Spin our discovery wheel to explore 
-                <span className="text-pink-600 font-bold"> personalized product categories</span> 
-                tailored to your skincare and beauty needs.
+              <p className="text-gray-700 mb-6 text-center text-base leading-relaxed">
+                Discover personalized beauty products that match your unique style, skin type, and preferences.
               </p>
               
-              <div className="bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200 rounded-xl p-4 mb-6">
-                <p className="text-pink-800 font-semibold text-md">
-                  Discover products that match your unique beauty goals!
-                </p>
+              {/* Feature Icons */}
+              <div className="flex justify-center space-x-6 mb-6">
+                <div className="flex flex-col items-center">
+                  <div className="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center mb-2">
+                    <span className="text-pink-600 text-lg">✨</span>
+                  </div>
+                  <span className="text-xs text-gray-600">Personalized</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mb-2">
+                    <span className="text-purple-600 text-lg">⭐</span>
+                  </div>
+                  <span className="text-xs text-gray-600">Quality</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                    <span className="text-blue-600 text-lg">💫</span>
+                  </div>
+                  <span className="text-xs text-gray-600">Results</span>
+                </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-pink-100 rounded-lg p-3">
-                  <div className="w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-white text-sm font-bold">P</span>
-                  </div>
-                  <p className="text-sm font-semibold text-pink-800">Personalized Discovery</p>
-                </div>
-                <div className="bg-purple-100 rounded-lg p-3">
-                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-white text-sm font-bold">B</span>
-                  </div>
-                  <p className="text-sm font-semibold text-purple-800">Beauty Experts</p>
-                </div>
-              </div>
-              
+              {/* Main Action Button */}
               <button
                 onClick={closePopup}
-                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-pink-600 hover:to-purple-700 transition-all transform hover:scale-105 shadow-xl mb-3"
+                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-4 rounded-xl font-bold hover:from-pink-600 hover:to-purple-700 transition-all transform hover:scale-105 shadow-lg border-2 border-white/20 mb-4 text-lg"
               >
                 Start Your Discovery
               </button>
               
-              <p className="text-xs text-gray-500">
-                Personalized recommendations based on your beauty preferences
-              </p>
+              {/* Quick Options */}
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={handleCreateTimetable}
+                  className="bg-white border-2 border-pink-200 text-pink-700 py-3 px-4 rounded-lg font-semibold hover:bg-pink-50 transition-all text-sm text-center flex items-center justify-center space-x-2"
+                >
+                  <span>📅</span>
+                  <span> Create Your Skincare Timetable</span>
+                </button>
+                <button
+                  onClick={handleCreateCustomPackage}
+                  className="bg-white border-2 border-purple-200 text-purple-700 py-3 px-4 rounded-lg font-semibold hover:bg-purple-50 transition-all text-sm text-center flex items-center justify-center space-x-2"
+                >
+                  <span>🎁</span>
+                  <span>Create Your Custom Package</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
