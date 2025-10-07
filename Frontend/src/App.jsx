@@ -15,6 +15,7 @@ import Timetable from "./pages/Timetable";
 import ScrollToTop from "./components/ScrollToTop"; // Add this import
 import Packages from "./pages/Package";
 import BundleDetail from "./pages/PackageDetailedPage";
+import SkinClinic from "./pages/Clinic";
 
 function App() {
   const user = useSelector((state) => state.user);
@@ -58,6 +59,10 @@ function App() {
          {
           path:"/skincare-timetable",
           element: <Timetable />
+        },
+         {
+          path:"/skin-clinic",
+          element: <SkinClinic />
         },
 
         {
