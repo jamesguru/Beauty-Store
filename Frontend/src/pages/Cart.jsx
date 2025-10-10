@@ -6,43 +6,73 @@ import { toast, ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { trackPageView, trackButtonClick, trackUserAction, trackPurchase } from '../utils/analytics';
 
 const Cart = () => {
   const cart = useSelector((state) => state.cart);
   const user = useSelector((state) => state.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  
+  // State management
   const [showOrderModal, setShowOrderModal] = useState(false);
-  const [modalStep, setModalStep] = useState(1); // 1: Payment choice, 2: Details form
+  const [modalStep, setModalStep] = useState(1);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [showPaymentIframe, setShowPaymentIframe] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState('');
   const [isIframeLoading, setIsIframeLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [currentOrderId, setCurrentOrderId] = useState(null);
+  const [phoneError, setPhoneError] = useState('');
+  
   const [orderDetails, setOrderDetails] = useState({
     name: '',
     phone: '',
     email: '',
     address: '',
     payNow: false,
-    pickupOption: '', // 'pickup' or 'delivery'
-    locationType: '' // 'nairobi' or 'outside'
+    pickupOption: '',
+    locationType: ''
   });
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [currentOrderId, setCurrentOrderId] = useState(null);
-  const [phoneError, setPhoneError] = useState('');
 
-  // Handle modal animation states
+  // Analytics: Track page view and cart state
+  useEffect(() => {
+    trackPageView('cart_page');
+    trackButtonClick('cart_view', {
+      cart_items_count: cart.products?.length || 0,
+      cart_total: cart.total || 0,
+      cart_quantity: cart.quantity || 0,
+      user_logged_in: !!user.currentUser
+    });
+  }, []);
+
+  // Analytics: Track cart updates
+  useEffect(() => {
+    if (cart.products?.length > 0) {
+      trackUserAction('cart_updated', 'cart_update', {
+        cart_items_count: cart.products.length,
+        cart_total: cart.total,
+        cart_quantity: cart.quantity,
+        products: cart.products.map(p => ({
+          product_id: p._id,
+          product_name: p.title,
+          quantity: p.quantity,
+          price: p.price
+        }))
+      });
+    }
+  }, [cart.products, cart.total, cart.quantity]);
+
+  // Modal animation handling
   useEffect(() => {
     if (showOrderModal) {
-      requestAnimationFrame(() => {
-        setIsModalVisible(true);
-      });
+      requestAnimationFrame(() => setIsModalVisible(true));
     } else {
       setIsModalVisible(false);
     }
   }, [showOrderModal]);
 
-  // Check payment status periodically if iframe is shown
+  // Payment status polling
   useEffect(() => {
     let intervalId;
     
@@ -50,12 +80,20 @@ const Cart = () => {
       intervalId = setInterval(async () => {
         try {
           const response = await userRequest.get(`/pesapal/status?trackingId=${currentOrderId}&reference=${currentOrderId}`);
-          console.log('Payment status check:', response.data);
           
           if (response.data.status === 'COMPLETED') {
-            // Payment successful
             clearInterval(intervalId);
             toast.success('🎉 Payment completed successfully!');
+            
+            // Analytics: Track successful payment
+            trackPurchase({
+              order_id: currentOrderId,
+              amount: cart.total + calculateShippingFee(),
+              payment_method: 'pesapal',
+              products_count: cart.products?.length || 0,
+              currency: 'KES'
+            });
+            
             dispatch(clearCart());
             setShowPaymentIframe(false);
             navigate('/myorders');
@@ -63,21 +101,70 @@ const Cart = () => {
         } catch (error) {
           console.error('Error checking payment status:', error);
         }
-      }, 3000); // Check every 3 seconds
+      }, 3000);
     }
 
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [showPaymentIframe, currentOrderId, navigate, dispatch]);
+  }, [showPaymentIframe, currentOrderId, navigate, dispatch, cart.total, cart.products]);
 
+  // Helper functions
+  const validatePhoneNumber = (phone) => {
+    const cleanedPhone = phone.replace(/\D/g, '');
+    const kenyanRegex = /^(254|0)(7[0-9]|1[0-1])[0-9]{7}$/;
+    
+    if (!cleanedPhone) {
+      return { isValid: false, message: 'Phone number is required' };
+    }
+    
+    if (!kenyanRegex.test(cleanedPhone)) {
+      return { isValid: false, message: 'Please enter a valid Kenyan phone number' };
+    }
+    
+    let formattedPhone = cleanedPhone;
+    if (cleanedPhone.startsWith('0')) {
+      formattedPhone = '254' + cleanedPhone.substring(1);
+    }
+    
+    return { isValid: true, formatted: formattedPhone };
+  };
+
+  const calculateShippingFee = () => {
+    if (orderDetails.pickupOption === 'pickup') {
+      return 0;
+    } else if (orderDetails.locationType === 'nairobi') {
+      return 200;
+    } else if (orderDetails.locationType === 'outside') {
+      return 350;
+    }
+    return 0;
+  };
+
+  // Cart actions with analytics
   const handleRemoveProduct = (product) => {
     dispatch(removeProduct(product));
+    
+    trackButtonClick('remove_from_cart', {
+      product_id: product._id,
+      product_name: product.title,
+      product_price: product.price,
+      quantity: product.quantity,
+      remaining_items: (cart.products?.length || 0) - 1
+    });
+    
     toast.success('Item removed from cart');
   };
 
   const handleClearCart = () => {
+    const previousItems = cart.products?.length || 0;
     dispatch(clearCart());
+    
+    trackButtonClick('clear_cart', {
+      previous_items_count: previousItems,
+      cart_total: cart.total || 0
+    });
+    
     toast.info('Cart cleared');
   };
 
@@ -93,40 +180,22 @@ const Cart = () => {
       _id: product._id, 
       quantity: newQuantity 
     }));
+    
+    trackButtonClick('update_cart_quantity', {
+      product_id: product._id,
+      product_name: product.title,
+      old_quantity: product.quantity,
+      new_quantity: newQuantity,
+      change_type: change > 0 ? 'increase' : 'decrease'
+    });
   };
 
-  const validatePhoneNumber = (phone) => {
-    // Remove any non-digit characters
-    const cleanedPhone = phone.replace(/\D/g, '');
-    
-    // Check if it's a valid Kenyan phone number
-    const kenyanRegex = /^(254|0)(7[0-9]|1[0-1])[0-9]{7}$/;
-    
-    if (!cleanedPhone) {
-      return { isValid: false, message: 'Phone number is required' };
-    }
-    
-    if (!kenyanRegex.test(cleanedPhone)) {
-      return { isValid: false, message: 'Please enter a valid Kenyan phone number' };
-    }
-    
-    // Convert to international format (254...)
-    let formattedPhone = cleanedPhone;
-    if (cleanedPhone.startsWith('0')) {
-      formattedPhone = '254' + cleanedPhone.substring(1);
-    }
-    
-    return { isValid: true, formatted: formattedPhone };
-  };
-
+  // Form handlers with analytics
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     
     if (name === 'phone') {
-      // Only allow numbers
       const numbersOnly = value.replace(/\D/g, '');
-      
-      // Validate phone number as user types
       const validation = validatePhoneNumber(numbersOnly);
       setPhoneError(validation.isValid ? '' : validation.message);
       
@@ -147,9 +216,14 @@ const Cart = () => {
     setOrderDetails(prev => ({
       ...prev,
       pickupOption: option,
-      // Reset location type if switching to pickup
       ...(option === 'pickup' && { locationType: '' })
     }));
+    
+    trackButtonClick('shipping_option_selected', {
+      option: option,
+      cart_total: cart.total || 0,
+      shipping_fee: calculateShippingFee()
+    });
   };
 
   const handleLocationTypeChange = (location) => {
@@ -157,19 +231,41 @@ const Cart = () => {
       ...prev,
       locationType: location
     }));
+    
+    trackButtonClick('delivery_location_selected', {
+      location: location,
+      shipping_fee: calculateShippingFee()
+    });
   };
 
+  // Checkout flow with analytics
   const handleProceedToCheckout = () => {
     if (!user.currentUser) {
+      trackButtonClick('checkout_attempt_without_login', {
+        cart_items_count: cart.products?.length || 0,
+        cart_total: cart.total || 0
+      });
       toast.error("Please login to place an order");
       return;
     }
+    
+    trackButtonClick('checkout_initiated', {
+      cart_items_count: cart.products?.length || 0,
+      cart_total: cart.total || 0,
+      cart_quantity: cart.quantity || 0
+    });
+    
     setModalStep(1);
     setShowOrderModal(true);
   };
 
   const handleCloseModal = () => {
     if (!isProcessing) {
+      trackButtonClick('checkout_modal_closed', {
+        modal_step: modalStep,
+        cart_items_count: cart.products?.length || 0
+      });
+      
       setIsModalVisible(false);
       setTimeout(() => {
         setShowOrderModal(false);
@@ -188,7 +284,26 @@ const Cart = () => {
     }
   };
 
+  const handlePaymentChoice = (payNow) => {
+    setOrderDetails(prev => ({ ...prev, payNow }));
+    
+    trackButtonClick('payment_method_selected', {
+      method: payNow ? 'pay_now' : 'pay_later',
+      cart_total: cart.total || 0,
+      shipping_fee: calculateShippingFee(),
+      total_amount: cart.total + calculateShippingFee()
+    });
+    
+    setModalStep(2);
+  };
+
+  // Payment handlers with analytics
   const handleClosePaymentIframe = () => {
+    trackButtonClick('payment_iframe_closed', {
+      order_id: currentOrderId,
+      payment_status: 'cancelled_by_user'
+    });
+    
     setShowPaymentIframe(false);
     setPaymentUrl('');
     setCurrentOrderId(null);
@@ -197,29 +312,16 @@ const Cart = () => {
 
   const handleIframeLoad = () => {
     setIsIframeLoading(false);
+    trackButtonClick('payment_iframe_loaded', {
+      order_id: currentOrderId
+    });
   };
 
-  const handlePaymentChoice = (payNow) => {
-    setOrderDetails(prev => ({ ...prev, payNow }));
-    setModalStep(2);
-  };
-
-  // Calculate shipping fee based on user selection
-  const calculateShippingFee = () => {
-    if (orderDetails.pickupOption === 'pickup') {
-      return 0; // Free for pickup
-    } else if (orderDetails.locationType === 'nairobi') {
-      return 200; // KES 200 for Nairobi delivery
-    } else if (orderDetails.locationType === 'outside') {
-      return 350; // KES 350 for outside Nairobi delivery
-    }
-    return 0; // Default to 0 if not selected
-  };
-
+  // Main order placement function
   const handlePlaceOrder = async () => {
-    // Validate pickup/delivery selection
+    // Validation
     if (!orderDetails.pickupOption) {
-      toast.error('Please choose whether you will pickup or need delivery');
+      toast.error('Please choose pickup or delivery');
       return;
     }
 
@@ -228,7 +330,6 @@ const Cart = () => {
       return;
     }
 
-    // Validate phone number before proceeding
     const phoneValidation = validatePhoneNumber(orderDetails.phone);
     if (!phoneValidation.isValid) {
       toast.error(phoneValidation.message);
@@ -243,15 +344,12 @@ const Cart = () => {
     setIsProcessing(true);
 
     try {
-      // All amounts are in KES now
       const subtotal = cart.total;
       const shippingFee = calculateShippingFee();
       const totalInKES = subtotal + shippingFee;
-
-      // Format phone number to international format
       const formattedPhone = validatePhoneNumber(orderDetails.phone).formatted;
 
-      // Create order first
+      // Create order data
       const orderData = {
         userId: user.currentUser._id,
         name: orderDetails.name,
@@ -270,15 +368,26 @@ const Cart = () => {
         shippingFee: shippingFee,
         pickupOption: orderDetails.pickupOption,
         locationType: orderDetails.locationType,
-        status: orderDetails.payNow ? 0 : 1, // 0 = pending payment, 1 = confirmed order
+        status: orderDetails.payNow ? 0 : 1,
       };
 
       console.log('📦 Creating order with data:', orderData);
       const orderResponse = await userRequest.post("/orders", orderData);
       console.log('✅ Order created successfully:', orderResponse.data);
       
+      // Analytics: Track order creation
+      trackButtonClick('order_created', {
+        order_id: orderResponse.data._id,
+        payment_method: orderDetails.payNow ? 'online' : 'pay_later',
+        total_amount: totalInKES,
+        shipping_fee: shippingFee,
+        pickup_option: orderDetails.pickupOption,
+        location_type: orderDetails.locationType,
+        products_count: cart.products?.length || 0
+      });
+
       if (orderDetails.payNow) {
-        // Proceed with payment in KES
+        // Process online payment
         const paymentData = {
           email: orderDetails.email || user.currentUser.email,
           reference: orderResponse.data._id,
@@ -297,18 +406,36 @@ const Cart = () => {
           setPaymentUrl(paymentResponse.data);
           setShowPaymentIframe(true);
           setIsIframeLoading(true);
+          
+          trackButtonClick('payment_initiated', {
+            order_id: orderResponse.data._id,
+            amount: totalInKES,
+            payment_gateway: 'pesapal'
+          });
+          
           handleCloseModal();
         } else {
           throw new Error('No redirect URL received from payment gateway');
         }
       } else {
-        // Order placed without immediate payment
+        // Pay later flow
         let successMessage = '🎉 Order placed successfully! ';
         if (orderDetails.pickupOption === 'pickup') {
           successMessage += 'We look forward to seeing you at our shop!';
         } else {
           successMessage += 'We will contact you for payment when your order is ready.';
         }
+        
+        // Analytics: Track successful order placement
+        trackPurchase({
+          order_id: orderResponse.data._id,
+          amount: totalInKES,
+          payment_method: 'pay_later',
+          products_count: cart.products?.length || 0,
+          currency: 'KES',
+          pickup_option: orderDetails.pickupOption,
+          location_type: orderDetails.locationType
+        });
         
         toast.success(successMessage);
         dispatch(clearCart());
@@ -318,7 +445,14 @@ const Cart = () => {
 
     } catch (error) {
       console.error('❌ Order/Payment error:', error);
-      console.error('Error details:', error.response?.data || error.message);
+      
+      // Analytics: Track order error
+      trackButtonClick('order_error', {
+        error_type: error.response?.status === 400 ? 'validation_error' : 'server_error',
+        error_message: error.message,
+        payment_method: orderDetails.payNow ? 'online' : 'pay_later',
+        cart_total: cart.total || 0
+      });
       
       if (error.response?.status === 400) {
         toast.error('Failed to create order. Please try again.');
@@ -334,11 +468,12 @@ const Cart = () => {
     }
   };
 
-  // Calculate totals in KES
+  // Calculate totals
   const subtotal = cart.total || 0;
   const shippingFee = calculateShippingFee();
   const total = subtotal + shippingFee;
 
+  // Modal content renderer
   const renderModalContent = () => {
     if (modalStep === 1) {
       return (
@@ -347,9 +482,7 @@ const Cart = () => {
             <FaCreditCard className="w-8 h-8 text-rose-600" />
           </div>
           <h3 className="text-2xl font-bold text-gray-800 mb-4">Choose Payment Method</h3>
-          <p className="text-gray-600 mb-6">
-            How would you like to complete your order?
-          </p>
+          <p className="text-gray-600 mb-6">How would you like to complete your order?</p>
 
           <div className="space-y-4">
             <button
@@ -376,8 +509,7 @@ const Cart = () => {
                 <p className="text-sm text-yellow-800 font-semibold mb-1">Important Notice</p>
                 <p className="text-xs text-yellow-700">
                   If you choose "Pay Later", our team will contact you for payment confirmation 
-                  before your order is dispatched. Your goods will be prepared but will only be 
-                  shipped after payment is completed.
+                  before your order is dispatched.
                 </p>
               </div>
             </div>
@@ -395,7 +527,6 @@ const Cart = () => {
 
     return (
       <>
-        {/* Header with back button */}
         <div className="flex items-center justify-between mb-6">
           <button 
             onClick={() => setModalStep(1)}
@@ -415,7 +546,6 @@ const Cart = () => {
           </button>
         </div>
 
-        {/* Payment method reminder */}
         <div className={`mb-6 p-3 rounded-lg ${
           orderDetails.payNow ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'
         }`}>
@@ -471,16 +601,6 @@ const Cart = () => {
                 <p className="text-xs mt-1">Shipping fee applies</p>
               </button>
             </div>
-            
-            {orderDetails.pickupOption === 'pickup' && (
-              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>📍 Our Shop Location:</strong><br />
-                  Nairobi CBD, near Manchester Coach Bus Station<br />
-                  <span className="text-xs">We'll contact you when your order is ready for pickup</span>
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Delivery Location Selection */}
@@ -522,19 +642,11 @@ const Cart = () => {
           {/* Form fields */}
           {[
             { label: 'Full Name *', name: 'name', type: 'text', placeholder: 'Enter your full name', required: true },
-            { 
-              label: 'Phone Number *', 
-              name: 'phone', 
-              type: 'tel', 
-              placeholder: 'e.g., 254727632051', 
-              required: true 
-            },
+            { label: 'Phone Number *', name: 'phone', type: 'tel', placeholder: 'e.g., 254727632051', required: true },
             { label: 'Email Address', name: 'email', type: 'email', placeholder: 'Enter your email (optional)', required: false },
-          ].map((field, index) => (
+          ].map((field) => (
             <div key={field.name}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {field.label}
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
               <input
                 type={field.type}
                 name={field.name}
@@ -546,18 +658,12 @@ const Cart = () => {
                 placeholder={field.placeholder}
                 required={field.required}
                 inputMode={field.name === 'phone' ? 'numeric' : 'text'}
-                pattern={field.name === 'phone' ? '[0-9]*' : undefined}
               />
               {field.name === 'phone' && phoneError && (
                 <p className="text-red-500 text-xs mt-1">{phoneError}</p>
               )}
               {field.name === 'phone' && !phoneError && orderDetails.phone && (
                 <p className="text-green-500 text-xs mt-1">✓ Valid Kenyan number</p>
-              )}
-              {field.name === 'phone' && (
-                <p className="text-gray-500 text-xs mt-1">
-                  Format: 2547XXXXXXXX (numbers only)
-                </p>
               )}
             </div>
           ))}
@@ -579,11 +685,6 @@ const Cart = () => {
               }
               required={orderDetails.pickupOption === 'delivery'}
             />
-            {orderDetails.pickupOption === 'delivery' && (
-              <p className="text-gray-500 text-xs mt-1">
-                Please provide your complete delivery address
-              </p>
-            )}
           </div>
 
           {/* Order Summary */}
@@ -601,9 +702,7 @@ const Cart = () => {
                     ` (${orderDetails.locationType === 'nairobi' ? 'Nairobi' : 'Outside Nairobi'})`
                   }
                 </span>
-                <span>
-                  {shippingFee === 0 ? 'FREE' : `KES ${shippingFee.toLocaleString()}`}
-                </span>
+                <span>{shippingFee === 0 ? 'FREE' : `KES ${shippingFee.toLocaleString()}`}</span>
               </div>
               <div className="flex justify-between font-semibold border-t pt-2">
                 <span>Total</span>
@@ -613,7 +712,7 @@ const Cart = () => {
           </div>
         </div>
 
-        {/* Buttons */}
+        {/* Action Buttons */}
         <div className="mt-6 space-y-3">
           <button
             onClick={handlePlaceOrder}
@@ -647,15 +746,6 @@ const Cart = () => {
             Cancel
           </button>
         </div>
-
-        {/* Security note */}
-        <div className="mt-4 text-center">
-          <p className="text-xs text-gray-500">
-            🔒 Your information is secure. {orderDetails.payNow ? 
-            'You will be redirected to secure payment.' : 
-            'We will contact you for payment when your order is ready.'}
-          </p>
-        </div>
       </>
     );
   };
@@ -663,18 +753,7 @@ const Cart = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-white pt-24 pb-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
+        <ToastContainer position="top-right" autoClose={3000} theme="light" />
 
         {/* Payment Iframe Modal */}
         {showPaymentIframe && (
@@ -716,14 +795,13 @@ const Cart = () => {
           </div>
         )}
 
-        {/* Order Modal with Smooth Animations */}
+        {/* Order Modal */}
         {showOrderModal && (
           <div className={`
             fixed inset-0 flex items-center justify-center z-40 p-4
             transition-all duration-300 ease-out
             ${isModalVisible ? 'opacity-100' : 'opacity-0'}
           `}>
-            {/* Backdrop with fade animation */}
             <div 
               className={`
                 absolute inset-0 bg-black transition-opacity duration-300
@@ -732,7 +810,6 @@ const Cart = () => {
               onClick={handleCloseModal}
             />
             
-            {/* Modal content with scale animation */}
             <div className={`
               relative bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto
               transform transition-all duration-300 ease-out
@@ -740,7 +817,6 @@ const Cart = () => {
               ${modalStep === 1 ? 'max-w-sm w-full' : 'max-w-md w-full'}
             `}>
               <div className="p-6">
-                {/* Animation wrapper for step content */}
                 <div key={modalStep} className={`
                   transform transition-all duration-500 ease-out
                   ${isModalVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
@@ -752,10 +828,15 @@ const Cart = () => {
           </div>
         )}
 
-        {/* Rest of the cart component */}
-        {/* Header */}
+        {/* Main Cart Content */}
         <div className="flex items-center mb-8">
-          <Link to="/" className="flex items-center text-rose-600 hover:text-rose-700 transition-colors duration-300 mr-4">
+          <Link 
+            to="/" 
+            onClick={() => trackButtonClick('continue_shopping_from_cart', {
+              cart_items_count: cart.products?.length || 0
+            })}
+            className="flex items-center text-rose-600 hover:text-rose-700 transition-colors duration-300 mr-4"
+          >
             <FaArrowLeft className="mr-2" />
             Continue Shopping
           </Link>
@@ -779,6 +860,7 @@ const Cart = () => {
             </p>
             <Link 
               to="/products" 
+              onClick={() => trackButtonClick('browse_products_from_empty_cart')}
               className="bg-rose-600 hover:bg-rose-700 text-white px-8 py-3 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg inline-block"
             >
               Discover Products
@@ -904,18 +986,11 @@ const Cart = () => {
                 <div className="mt-6 pt-6 border-t border-rose-100">
                   <h3 className="text-sm font-semibold text-gray-800 mb-3">We Accept</h3>
                   <div className="flex space-x-3">
-                    <div className="bg-gray-100 p-2 rounded-lg flex items-center justify-center w-14 h-9">
-                      <span className="text-xs font-semibold text-gray-600">VISA</span>
-                    </div>
-                    <div className="bg-gray-100 p-2 rounded-lg flex items-center justify-center w-14 h-9">
-                      <span className="text-xs font-semibold text-gray-600">MC</span>
-                    </div>
-                    <div className="bg-gray-100 p-2 rounded-lg flex items-center justify-center w-14 h-9">
-                      <span className="text-xs font-semibold text-gray-600">AMEX</span>
-                    </div>
-                    <div className="bg-gray-100 p-2 rounded-lg flex items-center justify-center w-14 h-9">
-                      <span className="text-xs font-semibold text-gray-600">PP</span>
-                    </div>
+                    {['VISA', 'MC', 'AMEX', 'PP'].map((method) => (
+                      <div key={method} className="bg-gray-100 p-2 rounded-lg flex items-center justify-center w-14 h-9">
+                        <span className="text-xs font-semibold text-gray-600">{method}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -925,7 +1000,7 @@ const Cart = () => {
                 <p className="text-sm text-blue-700 flex items-start">
                   <FaInfoCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
                   <span>
-                    <strong>Free pickup</strong> available at our Nairobi CBD shop (near Manchester Coach Bus Station). 
+                    <strong>Free pickup</strong> available at our Nairobi CBD shop. 
                     Delivery options available for Nairobi (KES 200) and outside Nairobi (KES 350).
                   </span>
                 </p>

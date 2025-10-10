@@ -1,12 +1,18 @@
 import { useState, useEffect } from "react";
 import { userRequest } from "../requestMethods";
 import { Link } from "react-router-dom";
+import { trackPageView, trackButtonClick, trackUserAction } from "../utils/analytics";
 
 const Packages = () => {
   const [bundles, setBundles] = useState([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Track page view
+  useEffect(() => {
+    trackPageView('packages_page');
+  }, []);
 
   // Fetch bundles from database
   useEffect(() => {
@@ -15,8 +21,18 @@ const Packages = () => {
       try {
         const res = await userRequest.get("/bundles");
         setBundles(res.data);
+        
+        // Track bundles loaded successfully
+        trackButtonClick('bundles_loaded', {
+          bundles_count: res.data.length,
+      bundles_names: res.data.map(b => b.name)
+        });
       } catch (error) {
         console.log("Error fetching bundles:", error);
+        // Track bundles load error
+        trackButtonClick('bundles_load_error', {
+          error: error.message
+        });
       } finally {
         setIsLoading(false);
       }
@@ -35,6 +51,19 @@ const Packages = () => {
     return () => clearInterval(interval);
   }, [isHovered, bundles.length]);
 
+  // Track featured bundle auto-rotation
+  useEffect(() => {
+    if (bundles.length > 0 && activeIndex > 0) {
+      const currentBundle = bundles[activeIndex];
+      trackButtonClick('featured_bundle_auto_rotate', {
+        bundle_id: currentBundle._id,
+        bundle_name: currentBundle.name,
+        bundle_index: activeIndex,
+        total_bundles: bundles.length
+      });
+    }
+  }, [activeIndex, bundles]);
+
   const getBadgeColor = (badge) => {
     switch (badge) {
       case 'BEST VALUE': return "bg-rose-600/90";
@@ -51,6 +80,73 @@ const Packages = () => {
 
   const calculateSavings = (bundle) => {
     return bundle.originalPrice - bundle.discountedPrice;
+  };
+
+  const handleBundleClick = (bundle, source) => {
+    trackButtonClick('bundle_view', {
+      bundle_id: bundle._id,
+      bundle_name: bundle.name,
+      bundle_badge: bundle.badge,
+      source: source,
+      discounted_price: bundle.discountedPrice,
+      original_price: bundle.originalPrice,
+      savings: calculateSavings(bundle),
+      products_count: bundle.products?.length || 0
+    });
+  };
+
+  const handleIndicatorClick = (index, bundle) => {
+    setActiveIndex(index);
+    trackButtonClick('featured_bundle_indicator_click', {
+      bundle_id: bundle._id,
+      bundle_name: bundle.name,
+      bundle_index: index,
+      total_bundles: bundles.length
+    });
+  };
+
+  const handleBundleHover = (bundle, action) => {
+    if (action === 'enter') {
+      trackButtonClick('bundle_hover_start', {
+        bundle_id: bundle._id,
+        bundle_name: bundle.name,
+        bundle_badge: bundle.badge
+      });
+    }
+  };
+
+  const handleCreateCustomPackage = () => {
+    trackButtonClick('create_custom_package_click', {
+      source: 'packages_page_cta',
+      bundles_count: bundles.length
+    });
+  };
+
+  const handleContactExpert = () => {
+    trackButtonClick('contact_beauty_expert_click', {
+      source: 'packages_page_cta',
+      bundles_count: bundles.length
+    });
+  };
+
+  const handleBrowseProducts = () => {
+    trackButtonClick('browse_products_from_empty_state', {
+      source: 'packages_empty_state',
+      bundles_count: bundles.length
+    });
+  };
+
+  const handleFeaturedBundleInteraction = (bundle, action) => {
+    if (action === 'hover_start') {
+      setIsHovered(true);
+      trackButtonClick('featured_bundle_hover_start', {
+        bundle_id: bundle._id,
+        bundle_name: bundle.name,
+        bundle_index: activeIndex
+      });
+    } else {
+      setIsHovered(false);
+    }
   };
 
   if (isLoading) {
@@ -106,8 +202,8 @@ const Packages = () => {
         {/* Animated Showcase Area - Only show if bundles exist */}
         {bundles.length > 0 && (
           <div className="relative h-96 mb-16 rounded-2xl overflow-hidden shadow-xl"
-               onMouseEnter={() => setIsHovered(true)}
-               onMouseLeave={() => setIsHovered(false)}>
+               onMouseEnter={() => handleFeaturedBundleInteraction(bundles[activeIndex], 'hover_start')}
+               onMouseLeave={() => handleFeaturedBundleInteraction(bundles[activeIndex], 'hover_end')}>
             {bundles.map((bundle, index) => (
               <div
                 key={bundle._id}
@@ -154,9 +250,9 @@ const Packages = () => {
                       )}
                     </div>
                     
-                    {/* FIXED: Changed to /package/:packageId */}
                     <Link 
                       to={`/package/${bundle._id}`}
+                      onClick={() => handleBundleClick(bundle, 'featured_showcase')}
                       className="inline-block bg-white/20 hover:bg-white/30 text-white py-3 px-8 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 flex items-center justify-center backdrop-blur-sm border border-white/20 hover:border-white/40"
                     >
                       <span>Explore This Package</span>
@@ -171,13 +267,13 @@ const Packages = () => {
             
             {/* Package Indicators */}
             <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex space-x-3">
-              {bundles.map((_, index) => (
+              {bundles.map((bundle, index) => (
                 <button
                   key={index}
                   className={`w-3 h-3 rounded-full transition-all duration-300 ${
                     index === activeIndex ? 'bg-white scale-125' : 'bg-white/50'
                   }`}
-                  onClick={() => setActiveIndex(index)}
+                  onClick={() => handleIndicatorClick(index, bundle)}
                   aria-label={`View package ${index + 1}`}
                 />
               ))}
@@ -191,7 +287,7 @@ const Packages = () => {
             <div 
               key={bundle._id}
               className="group relative h-80 rounded-2xl overflow-hidden shadow-lg transition-all duration-500 hover:shadow-xl hover:-translate-y-2"
-              onMouseEnter={() => setIsHovered(true)}
+              onMouseEnter={() => handleBundleHover(bundle, 'enter')}
               onMouseLeave={() => setIsHovered(false)}
             >
               {/* Background Image */}
@@ -233,9 +329,9 @@ const Packages = () => {
                   <span>{bundle.products?.length || 0} products included</span>
                 </div>
                 
-                {/* FIXED: Changed to /package/:packageId */}
                 <Link 
                   to={`/package/${bundle._id}`}
+                  onClick={() => handleBundleClick(bundle, 'packages_grid')}
                   className="w-full bg-white/20 hover:bg-white/30 text-white py-2 rounded-lg font-medium transition-all duration-300 flex items-center justify-center backdrop-blur-sm border border-white/20 group-hover:border-white/40"
                 >
                   <span>View Details</span>
@@ -265,6 +361,7 @@ const Packages = () => {
               </p>
               <Link
                 to="/products"
+                onClick={handleBrowseProducts}
                 className="bg-rose-600 hover:bg-rose-700 text-white px-8 py-3 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-rose-200 inline-flex items-center"
               >
                 <span>Browse Individual Products</span>
@@ -289,11 +386,15 @@ const Packages = () => {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   to="/packages"
+                  onClick={handleCreateCustomPackage}
                   className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-rose-200"
                 >
                   Create Custom Package
                 </Link>
-                <button className="border border-rose-200 text-rose-600 hover:bg-rose-50 px-6 py-3 rounded-lg font-medium transition-colors duration-300">
+                <button 
+                  onClick={handleContactExpert}
+                  className="border border-rose-200 text-rose-600 hover:bg-rose-50 px-6 py-3 rounded-lg font-medium transition-colors duration-300"
+                >
                   Contact Beauty Expert
                 </button>
               </div>
@@ -301,32 +402,6 @@ const Packages = () => {
           </div>
         )}
       </div>
-
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0) rotate(0deg);
-          }
-          33% {
-            transform: translateY(-8px) rotate(0.3deg);
-          }
-          66% {
-            transform: translateY(4px) rotate(-0.3deg);
-          }
-        }
-        
-        .grid > div {
-          animation: float 6s ease-in-out infinite;
-        }
-        
-        .grid > div:nth-child(2) {
-          animation-delay: 1.5s;
-        }
-        
-        .grid > div:nth-child(3) {
-          animation-delay: 3s;
-        }
-      `}</style>
     </div>
   );
 };

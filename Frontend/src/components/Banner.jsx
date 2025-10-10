@@ -438,44 +438,7 @@ const Banner = () => {
           </div>
         </div>
         
-        <style jsx>{`
-          .clip-triangle {
-            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-          }
-          
-          @keyframes scale-in {
-            0% {
-              opacity: 0;
-              transform: scale(0.8);
-            }
-            100% {
-              opacity: 1;
-              transform: scale(1);
-            }
-          }
-          
-          @keyframes bounce-in {
-            0% {
-              opacity: 0;
-              transform: translateY(-20px) scale(0.9);
-            }
-            50% {
-              transform: translateY(5px) scale(1.02);
-            }
-            100% {
-              opacity: 1;
-              transform: translateY(0) scale(1);
-            }
-          }
-          
-          .animate-scale-in {
-            animation: scale-in 0.4s ease-out;
-          }
-          
-          .animate-bounce-in {
-            animation: bounce-in 0.6s ease-out;
-          }
-        `}</style>
+       
       </section>
     </>
   );

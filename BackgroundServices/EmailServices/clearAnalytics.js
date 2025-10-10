@@ -8,7 +8,7 @@ const cleanupOldAnalytics = async () => {
     console.log('Starting analytics cleanup...');
     
     const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 1);
     
     const result = await Analytics.deleteMany({
       createdAt: { $lt: sevenDaysAgo }

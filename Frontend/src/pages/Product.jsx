@@ -8,6 +8,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { addProduct } from '../redux/cartRedux';
 import { showAverageRating } from "../components/Ratings"
+import { trackPageView, trackButtonClick, trackUserAction } from '../utils/analytics';
 
 const Product = () => {
   const location = useLocation();
@@ -20,18 +21,50 @@ const Product = () => {
   const [isHovering, setIsHovering] = useState(false);
   const dispatch = useDispatch();
   const cart = useSelector((state) => state.cart)
+  const user = useSelector((state) => state.user);
   const autoSlideRef = useRef(null);
 
   let price;
 
-  const handleQuantity = (action) => {
-    if (action === "dec") {
-      setQuantity(quantity === 1 ? 1 : quantity - 1)
-    }
+  // Analytics: Track page view
+  useEffect(() => {
+    trackPageView('product_detail_page');
+  }, []);
 
-    if (action === "inc") {
-      setQuantity(quantity + 1)
+  // Analytics: Track product view
+  useEffect(() => {
+    if (product._id) {
+      trackButtonClick('product_view', {
+        product_id: product._id,
+        product_name: product.title,
+        product_category: product.categories?.[0],
+        product_price: product.discountedPrice || product.originalPrice,
+        has_discount: !!product.discountedPrice,
+        user_logged_in: !!user.currentUser
+      });
     }
+  }, [product, user.currentUser]);
+
+  const handleQuantity = (action) => {
+    const oldQuantity = quantity;
+    let newQuantity;
+    
+    if (action === "dec") {
+      newQuantity = quantity === 1 ? 1 : quantity - 1;
+    } else if (action === "inc") {
+      newQuantity = quantity + 1;
+    }
+    
+    setQuantity(newQuantity);
+    
+    // Analytics: Track quantity change
+    trackButtonClick('product_quantity_change', {
+      product_id: product._id,
+      product_name: product.title,
+      old_quantity: oldQuantity,
+      new_quantity: newQuantity,
+      change_type: action === 'inc' ? 'increase' : 'decrease'
+    });
   }
 
   useEffect(() => {
@@ -39,12 +72,27 @@ const Product = () => {
       try {
         const res = await userRequest.get("/products/find/" + id);
         setProduct(res.data);
+        
+        // Analytics: Track product loaded successfully
+        trackButtonClick('product_loaded', {
+          product_id: res.data._id,
+          product_name: res.data.title,
+          images_count: res.data.img?.length || 0,
+          has_discount: !!res.data.discountedPrice
+        });
+        
         // Set the first image as selected by default
         if (res.data.img && res.data.img.length > 0) {
           setSelectedImage(0);
         }
       } catch (error) {
         console.log(error);
+        
+        // Analytics: Track product load error
+        trackButtonClick('product_load_error', {
+          product_id: id,
+          error: error.message
+        });
       }
     };
 
@@ -74,26 +122,68 @@ const Product = () => {
 
   const nextImage = () => {
     if (product.img && product.img.length > 0) {
+      const oldIndex = selectedImage;
       setSelectedImage((prev) => (prev + 1) % product.img.length);
       setAutoSlide(false); // Stop auto-slide when manually navigating
+      
+      // Analytics: Track image navigation
+      trackButtonClick('product_image_navigation', {
+        product_id: product._id,
+        product_name: product.title,
+        from_image: oldIndex,
+        to_image: (oldIndex + 1) % product.img.length,
+        navigation_type: 'next',
+        total_images: product.img.length
+      });
     }
   };
 
   const prevImage = () => {
     if (product.img && product.img.length > 0) {
+      const oldIndex = selectedImage;
       setSelectedImage((prev) => (prev - 1 + product.img.length) % product.img.length);
       setAutoSlide(false); // Stop auto-slide when manually navigating
+      
+      // Analytics: Track image navigation
+      trackButtonClick('product_image_navigation', {
+        product_id: product._id,
+        product_name: product.title,
+        from_image: oldIndex,
+        to_image: (oldIndex - 1 + product.img.length) % product.img.length,
+        navigation_type: 'previous',
+        total_images: product.img.length
+      });
     }
   };
 
   const handleImageSelect = (index) => {
+    const oldIndex = selectedImage;
     setSelectedImage(index);
     setAutoSlide(false); // Stop auto-slide when manually selecting an image
+    
+    // Analytics: Track image selection
+    trackButtonClick('product_image_select', {
+      product_id: product._id,
+      product_name: product.title,
+      from_image: oldIndex,
+      to_image: index,
+      total_images: product.img.length
+    });
   };
 
   const toggleAutoSlide = () => {
-    setAutoSlide(!autoSlide);
-    if (!autoSlide) {
+    const newAutoSlideState = !autoSlide;
+    setAutoSlide(newAutoSlideState);
+    
+    // Analytics: Track auto-slide toggle
+    trackButtonClick('product_auto_slide_toggle', {
+      product_id: product._id,
+      product_name: product.title,
+      new_state: newAutoSlideState ? 'enabled' : 'disabled',
+      total_images: product.img?.length || 0
+    });
+    
+    if (!newAutoSlideState) {
       // If we're turning auto-slide back on, also clear any hover state
       setIsHovering(false);
     }
@@ -136,6 +226,17 @@ const Product = () => {
   };
 
   const handleAddToCart = () => {
+    // Analytics: Track add to cart
+    trackButtonClick('product_add_to_cart', {
+      product_id: product._id,
+      product_name: product.title,
+      product_price: price,
+      quantity: quantity,
+      total_price: price * quantity,
+      has_discount: !!product.discountedPrice,
+      user_logged_in: !!user.currentUser
+    });
+
     dispatch(addProduct({ ...product, quantity, price, email: 'johndoe@gmail.com' }))
     toast.success("Product added to cart successfully!", {
       position: "top-right",
@@ -149,8 +250,63 @@ const Product = () => {
   }
 
   const toggleWishlist = () => {
-    setIsWishlisted(!isWishlisted);
-    toast.success(isWishlisted ? "Removed from wishlist" : "Added to wishlist");
+    const newWishlistState = !isWishlisted;
+    setIsWishlisted(newWishlistState);
+    
+    // Analytics: Track wishlist toggle
+    trackButtonClick('product_wishlist_toggle', {
+      product_id: product._id,
+      product_name: product.title,
+      new_state: newWishlistState ? 'added' : 'removed',
+      user_logged_in: !!user.currentUser
+    });
+    
+    toast.success(newWishlistState ? "Added to wishlist" : "Removed from wishlist");
+  }
+
+  const handleShare = () => {
+    // Analytics: Track share action
+    trackButtonClick('product_share', {
+      product_id: product._id,
+      product_name: product.title,
+      share_method: 'web_share' // You can track different share methods
+    });
+    
+    if (navigator.share) {
+      navigator.share({
+        title: product.title,
+        text: product.desc,
+        url: window.location.href,
+      })
+      .then(() => console.log('Successful share'))
+      .catch((error) => console.log('Error sharing:', error));
+    } else {
+      // Fallback: Copy to clipboard
+      navigator.clipboard.writeText(window.location.href);
+      toast.success("Product link copied to clipboard!");
+    }
+  }
+
+  const handleFeatureClick = (featureType, value) => {
+    // Analytics: Track feature clicks
+    trackButtonClick('product_feature_click', {
+      product_id: product._id,
+      product_name: product.title,
+      feature_type: featureType,
+      feature_value: value
+    });
+  }
+
+  const handleReviewInteraction = (action, reviewIndex, reviewData) => {
+    // Analytics: Track review interactions
+    trackButtonClick('product_review_interaction', {
+      product_id: product._id,
+      product_name: product.title,
+      action: action,
+      review_index: reviewIndex,
+      reviewer: reviewData?.postedBy,
+      rating: reviewData?.star
+    });
   }
 
   // Use actual product images array
@@ -312,7 +468,11 @@ const Product = () => {
                       <h4 className="font-medium text-gray-700 mb-2">Skin Concerns</h4>
                       <div className="flex flex-wrap gap-2">
                         {product.concern.map((concern, index) => (
-                          <span key={index} className="bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-sm">
+                          <span 
+                            key={index} 
+                            className="bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-rose-200 transition-colors"
+                            onClick={() => handleFeatureClick('skin_concern', concern)}
+                          >
                             {concern}
                           </span>
                         ))}
@@ -325,7 +485,11 @@ const Product = () => {
                       <h4 className="font-medium text-gray-700 mb-2">Skin Type</h4>
                       <div className="flex flex-wrap gap-2">
                         {product.skintype.map((type, index) => (
-                          <span key={index} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                          <span 
+                            key={index} 
+                            className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-blue-200 transition-colors"
+                            onClick={() => handleFeatureClick('skin_type', type)}
+                          >
                             {type}
                           </span>
                         ))}
@@ -338,7 +502,11 @@ const Product = () => {
                       <h4 className="font-medium text-gray-700 mb-2">Categories</h4>
                       <div className="flex flex-wrap gap-2">
                         {product.categories.map((category, index) => (
-                          <span key={index} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
+                          <span 
+                            key={index} 
+                            className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-green-200 transition-colors"
+                            onClick={() => handleFeatureClick('category', category)}
+                          >
                             {category}
                           </span>
                         ))}
@@ -350,7 +518,7 @@ const Product = () => {
             </div>
           </div>
 
-          {/* Product Details - Rest of the component remains the same */}
+          {/* Product Details */}
           <div className="flex-1">
             <div className="bg-white rounded-2xl shadow-lg p-8">
               <h1 className="text-3xl font-serif font-bold text-gray-800 mb-4">
@@ -441,7 +609,10 @@ const Product = () => {
 
               {/* Additional Actions */}
               <div className="flex gap-4">
-                <button className="flex-1 flex items-center justify-center gap-2 bg-white border border-gray-200 py-3 rounded-full text-gray-700 hover:bg-gray-50 transition-colors duration-300">
+                <button 
+                  onClick={handleShare}
+                  className="flex-1 flex items-center justify-center gap-2 bg-white border border-gray-200 py-3 rounded-full text-gray-700 hover:bg-gray-50 transition-colors duration-300"
+                >
                   <FaShare />
                   Share
                 </button>
@@ -465,38 +636,23 @@ const Product = () => {
 
                 {/* Features/Benefits */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-rose-100 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                      </svg>
+                  {[
+                    { label: "100% Natural Ingredients", icon: "🌿" },
+                    { label: "Cruelty Free", icon: "🐰" },
+                    { label: "Dermatologist Tested", icon: "🔬" },
+                    { label: "Vegan Formula", icon: "🌱" }
+                  ].map((feature, index) => (
+                    <div 
+                      key={index}
+                      className="flex items-center cursor-pointer hover:bg-rose-50 p-2 rounded-lg transition-colors"
+                      onClick={() => handleFeatureClick('product_feature', feature.label)}
+                    >
+                      <div className="w-8 h-8 bg-rose-100 rounded-full flex items-center justify-center mr-3">
+                        <span className="text-rose-600">{feature.icon}</span>
+                      </div>
+                      <span className="text-gray-700">{feature.label}</span>
                     </div>
-                    <span className="text-gray-700">100% Natural Ingredients</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-rose-100 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                      </svg>
-                    </div>
-                    <span className="text-gray-700">Cruelty Free</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-rose-100 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                      </svg>
-                    </div>
-                    <span className="text-gray-700">Dermatologist Tested</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-rose-100 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                      </svg>
-                    </div>
-                    <span className="text-gray-700">Vegan Formula</span>
-                  </div>
+                  ))}
                 </div>
               </div>
 
@@ -518,6 +674,22 @@ const Product = () => {
                           <span className="font-medium text-gray-800 ml-3">{rating.postedBy}</span>
                         </div>
                         <p className="text-gray-600">{rating.comment || "No comment provided"}</p>
+                        
+                        {/* Review Actions */}
+                        <div className="mt-3 flex gap-4">
+                          <button 
+                            onClick={() => handleReviewInteraction('helpful', index, rating)}
+                            className="text-sm text-gray-500 hover:text-rose-600 transition-colors"
+                          >
+                            Helpful ({Math.floor(Math.random() * 10)})
+                          </button>
+                          <button 
+                            onClick={() => handleReviewInteraction('report', index, rating)}
+                            className="text-sm text-gray-500 hover:text-red-600 transition-colors"
+                          >
+                            Report
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>

@@ -1,27 +1,70 @@
 import { useState, useEffect } from "react";
 import { userRequest } from "../requestMethods";
-import { FaUsers, FaEye, FaDesktop, FaMobile, FaChartBar, FaCalendar } from "react-icons/fa";
+import { 
+  FaUsers, 
+  FaEye, 
+  FaDesktop, 
+  FaMobile, 
+  FaChartBar, 
+  FaInfoCircle,
+  FaUser,
+  FaGlobe,
+  FaMapMarkerAlt,
+  FaLaptop,
+  FaTablet,
+  FaLink,
+  FaClock,
+  FaSearch,
+  FaShoppingCart,
+  FaSignInAlt,
+  FaCreditCard,
+  FaMousePointer
+} from "react-icons/fa";
+import { DataGrid } from '@mui/x-data-grid';
+import { 
+  Box, 
+  Card, 
+  CardContent, 
+  Typography, 
+  Select, 
+  MenuItem, 
+  FormControl,
+  InputLabel,
+  Chip,
+  Tooltip,
+  IconButton
+} from '@mui/material';
 
 const Analytics = () => {
   const [summary, setSummary] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState(7);
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 5,
+  });
+  const [rowCount, setRowCount] = useState(0);
+  const [selectedRow, setSelectedRow] = useState(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
 
   useEffect(() => {
     fetchAnalyticsData();
-  }, [timeRange]);
+  }, [timeRange, paginationModel]);
 
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true);
+      const skip = paginationModel.page * paginationModel.pageSize;
+      
       const [summaryRes, activityRes] = await Promise.all([
         userRequest.get(`/analytics/summary?days=${timeRange}`),
-        userRequest.get('/analytics?limit=10')
+        userRequest.get(`/analytics?limit=${paginationModel.pageSize}&skip=${skip}`)
       ]);
 
       setSummary(summaryRes.data.data);
       setRecentActivity(activityRes.data.data);
+      setRowCount(activityRes.data.total || activityRes.data.data.length);
     } catch (error) {
       console.error("Error fetching analytics:", error);
     } finally {
@@ -29,160 +72,484 @@ const Analytics = () => {
     }
   };
 
-  if (loading) {
+  const formatActionType = (actionType) => {
+    const types = {
+      'page_view': 'Page View',
+      'button_click': 'Button Click',
+      'login': 'User Login',
+      'purchase': 'Purchase',
+      'add_to_cart': 'Add to Cart',
+      'search': 'Search',
+      'form_submit': 'Form Submit',
+      'animation': 'Animation',
+      'product_view': 'Product View',
+      'bundle_view': 'Bundle View'
+    };
+    return types[actionType] || actionType;
+  };
+
+  const getActionIcon = (actionType) => {
+    const icons = {
+      'login': <FaSignInAlt size={12} />,
+      'purchase': <FaCreditCard size={12} />,
+      'page_view': <FaEye size={12} />,
+      'add_to_cart': <FaShoppingCart size={12} />,
+      'button_click': <FaMousePointer size={12} />,
+      'search': <FaSearch size={12} />,
+      'default': <FaChartBar size={12} />
+    };
+    return icons[actionType] || icons['default'];
+  };
+
+  const getActionColor = (actionType) => {
+    const colors = {
+      'login': 'success',
+      'purchase': 'primary',
+      'page_view': 'default',
+      'add_to_cart': 'warning',
+      'button_click': 'secondary',
+      'search': 'info',
+      'default': 'info'
+    };
+    return colors[actionType] || colors['default'];
+  };
+
+  const getDeviceIcon = (deviceType) => {
+    switch (deviceType) {
+      case 'desktop': return <FaDesktop size={14} />;
+      case 'mobile': return <FaMobile size={14} />;
+      case 'tablet': return <FaTablet size={14} />;
+      default: return <FaLaptop size={14} />;
+    }
+  };
+
+  const handleViewDetails = (row) => {
+    setSelectedRow(row);
+    setDetailModalOpen(true);
+  };
+
+  // DataGrid columns configuration
+  const columns = [
+    {
+      field: 'user',
+      headerName: 'User',
+      width: 180,
+      renderCell: (params) => (
+        <Box>
+          {params.row.userName || params.row.userEmail ? (
+            <>
+              <Typography variant="body2" fontWeight="medium">
+                {params.row.userName || 'User'}
+              </Typography>
+              {params.row.userEmail && (
+                <Typography variant="caption" color="textSecondary" noWrap>
+                  {params.row.userEmail}
+                </Typography>
+              )}
+            </>
+          ) : (
+            <Typography variant="body2" color="textSecondary">
+              Anonymous
+            </Typography>
+          )}
+        </Box>
+      ),
+    },
+    {
+      field: 'actionType',
+      headerName: 'Action',
+      width: 150,
+      renderCell: (params) => (
+        <Chip 
+          label={formatActionType(params.value)}
+          color={getActionColor(params.value)}
+          size="small"
+          variant="outlined"
+          icon={getActionIcon(params.value)}
+        />
+      ),
+    },
+    {
+      field: 'action',
+      headerName: 'Action Details',
+      width: 200,
+      renderCell: (params) => (
+        <Tooltip title={params.value || 'No details'} arrow>
+          <Typography variant="body2" noWrap>
+            {params.value || '-'}
+          </Typography>
+        </Tooltip>
+      ),
+    },
+    {
+      field: 'pageUrl',
+      headerName: 'Page',
+      width: 200,
+      renderCell: (params) => (
+        <Tooltip title={params.value} arrow>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <FaLink size={12} color="#666" />
+            <Typography variant="body2" noWrap>
+              {params.value.split('/').pop() || 'Home'}
+            </Typography>
+          </Box>
+        </Tooltip>
+      ),
+    },
+    {
+      field: 'device',
+      headerName: 'Device & Browser',
+      width: 180,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {getDeviceIcon(params.row.deviceType)}
+          <Box>
+            <Typography variant="body2" fontWeight="medium" textTransform="capitalize">
+              {params.row.deviceType}
+            </Typography>
+            <Typography variant="caption" color="textSecondary">
+              {params.row.browser !== 'unknown' ? params.row.browser : 'Unknown'}
+            </Typography>
+          </Box>
+        </Box>
+      ),
+    },
+    {
+      field: 'location',
+      headerName: 'Location',
+      width: 150,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <FaMapMarkerAlt size={12} color="#666" />
+          <Typography variant="body2">
+            {params.row.country !== 'unknown' ? params.row.country : 'Unknown'}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      field: 'referrer',
+      headerName: 'Referrer',
+      width: 150,
+      renderCell: (params) => (
+        <Typography variant="body2" noWrap>
+          {params.value && params.value !== 'direct' ? 
+            new URL(params.value).hostname.replace('www.', '') : 
+            'Direct'
+          }
+        </Typography>
+      ),
+    },
+    {
+      field: 'createdAt',
+      headerName: 'Time',
+      width: 150,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <FaClock size={12} color="#666" />
+          <Box>
+            <Typography variant="body2">
+              {new Date(params.value).toLocaleDateString()}
+            </Typography>
+            <Typography variant="caption" color="textSecondary">
+              {new Date(params.value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Typography>
+          </Box>
+        </Box>
+      ),
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 80,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <Tooltip title="View details" arrow>
+          <IconButton 
+            size="small" 
+            onClick={() => handleViewDetails(params.row)}
+            color="primary"
+          >
+            <FaEye size={14} />
+          </IconButton>
+        </Tooltip>
+      ),
+    },
+  ];
+
+  // Prepare data for DataGrid
+  const rows = recentActivity.map((activity, index) => ({
+    id: activity._id || index,
+    ...activity
+  }));
+
+  const StatsCard = ({ title, value, icon, color = "primary" }) => (
+    <Card sx={{ height: '100%' }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box>
+            <Typography color="textSecondary" gutterBottom variant="overline">
+              {title}
+            </Typography>
+            <Typography variant="h4" component="div" fontWeight="bold">
+              {value}
+            </Typography>
+          </Box>
+          <Box
+            sx={{
+              backgroundColor: `${color}.light`,
+              color: `${color}.main`,
+              borderRadius: 2,
+              p: 1.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            {icon}
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+
+  if (loading && recentActivity.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <Box className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></Box>
+      </Box>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <Box sx={{ p: 3, bgcolor: 'grey.50', minHeight: '100vh' }}>
+      <Box sx={{ maxWidth: '100%', mx: 'auto' }}>
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
-          <p className="text-gray-600">User behavior and platform insights</p>
-        </div>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+            Analytics Dashboard
+          </Typography>
+          <Typography variant="body1" color="textSecondary">
+            Comprehensive user behavior and platform insights
+          </Typography>
+        </Box>
 
         {/* Time Range Selector */}
-        <div className="mb-6">
-          <select 
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value={1}>Last 24 Hours</option>
-            <option value={7}>Last 7 Days</option>
-            <option value={30}>Last 30 Days</option>
-            <option value={90}>Last 90 Days</option>
-          </select>
-        </div>
+        <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>Time Range</InputLabel>
+            <Select
+              value={timeRange}
+              label="Time Range"
+              onChange={(e) => {
+                setTimeRange(e.target.value);
+                setPaginationModel({ ...paginationModel, page: 0 });
+              }}
+            >
+              <MenuItem value={1}>Last 24 Hours</MenuItem>
+              <MenuItem value={7}>Last 7 Days</MenuItem>
+              <MenuItem value={30}>Last 30 Days</MenuItem>
+              <MenuItem value={90}>Last 90 Days</MenuItem>
+            </Select>
+          </FormControl>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
+            <FaInfoCircle size={16} />
+            <Typography variant="caption">
+              Click the eye icon to view full details
+            </Typography>
+          </Box>
+        </Box>
 
         {/* Stats Cards */}
         {summary && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Page Views</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{summary.totalPageViews}</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <FaEye className="text-blue-600 text-xl" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Unique Visitors</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{summary.uniqueVisitors}</p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <FaUsers className="text-green-600 text-xl" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Desktop Users</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {summary.deviceBreakdown.find(d => d._id === 'desktop')?.count || 0}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <FaDesktop className="text-purple-600 text-xl" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Mobile Users</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {summary.deviceBreakdown.find(d => d._id === 'mobile')?.count || 0}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <FaMobile className="text-orange-600 text-xl" />
-                </div>
-              </div>
-            </div>
-          </div>
+          <Box sx={{ mb: 4 }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }, gap: 3 }}>
+              <StatsCard
+                title="Total Sessions"
+                value={summary.totalSessions || summary.totalPageViews}
+                icon={<FaEye size={24} />}
+                color="primary"
+              />
+              <StatsCard
+                title="Unique Visitors"
+                value={summary.uniqueVisitors}
+                icon={<FaUsers size={24} />}
+                color="success"
+              />
+              <StatsCard
+                title="Desktop Users"
+                value={summary.deviceBreakdown?.find(d => d._id === 'desktop')?.count || 0}
+                icon={<FaDesktop size={24} />}
+                color="secondary"
+              />
+              <StatsCard
+                title="Mobile Users"
+                value={summary.deviceBreakdown?.find(d => d._id === 'mobile')?.count || 0}
+                icon={<FaMobile size={24} />}
+                color="warning"
+              />
+            </Box>
+          </Box>
         )}
 
-        {/* Recent Activity */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-xl font-bold text-gray-800">Recent User Activity</h3>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-600">User</th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-600">Action</th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-600">Page</th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-600">Device</th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-600">Location</th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-600">Time</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {recentActivity.map((activity) => (
-                  <tr key={activity._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="py-4 px-6">
-                      {activity.userName ? (
-                        <div>
-                          <div className="font-medium text-gray-900">{activity.userName}</div>
-                          <div className="text-sm text-gray-500">{activity.userEmail}</div>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">Anonymous</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                        activity.actionType === 'login' ? 'bg-green-100 text-green-800' :
-                        activity.actionType === 'purchase' ? 'bg-blue-100 text-blue-800' :
-                        activity.actionType === 'page_view' ? 'bg-gray-100 text-gray-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {activity.actionType}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-600 max-w-xs truncate">
-                      {activity.pageUrl}
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center space-x-2">
-                        {activity.deviceType === 'mobile' && <FaMobile className="text-gray-400" />}
-                        {activity.deviceType === 'desktop' && <FaDesktop className="text-gray-400" />}
-                        {activity.deviceType === 'tablet' && <FaMobile className="text-gray-400" />}
-                        <span className="text-sm text-gray-600 capitalize">{activity.deviceType}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-600">
-                      {activity.country && activity.country !== 'unknown' ? activity.country : 'Unknown'}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-600">
-                      {new Date(activity.createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
+        {/* DataGrid */}
+        <Card>
+          <CardContent sx={{ p: 0 }}>
+            <Box sx={{ height: 500, width: '100%' }}>
+              <DataGrid
+                rows={rows}
+                columns={columns}
+                loading={loading}
+                paginationModel={paginationModel}
+                onPaginationModelChange={setPaginationModel}
+                pageSizeOptions={[5, 10, 25, 50]}
+                rowCount={rowCount}
+                paginationMode="server"
+                disableRowSelectionOnClick
+                sx={{
+                  border: 0,
+                  '& .MuiDataGrid-columnHeaders': {
+                    backgroundColor: 'grey.50',
+                    borderBottom: '2px solid',
+                    borderColor: 'grey.200',
+                  },
+                  '& .MuiDataGrid-cell': {
+                    borderBottom: '1px solid',
+                    borderColor: 'grey.100',
+                  },
+                  '& .MuiDataGrid-row:hover': {
+                    backgroundColor: 'primary.lightest',
+                  },
+                }}
+              />
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Detail Modal */}
+        {selectedRow && detailModalOpen && (
+          <Box
+            sx={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1300,
+              p: 2,
+            }}
+            onClick={() => setDetailModalOpen(false)}
+          >
+            <Card
+              sx={{
+                maxWidth: 600,
+                maxHeight: '90vh',
+                overflow: 'auto',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <FaInfoCircle size={18} color="#1976d2" />
+                  Activity Details
+                </Typography>
+
+                <Box sx={{ mt: 2, display: 'grid', gap: 3 }}>
+                  {/* User Information */}
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <FaUser size={14} />
+                      User Information
+                    </Typography>
+                    <Box sx={{ pl: 2 }}>
+                      <Typography variant="body2"><strong>Name:</strong> {selectedRow.userName || 'Anonymous'}</Typography>
+                      <Typography variant="body2"><strong>Email:</strong> {selectedRow.userEmail || 'Not provided'}</Typography>
+                      <Typography variant="body2"><strong>User ID:</strong> {selectedRow.userId || 'Not logged in'}</Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Technical Details */}
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <FaLaptop size={14} />
+                      Technical Details
+                    </Typography>
+                    <Box sx={{ pl: 2 }}>
+                      <Typography variant="body2"><strong>Session ID:</strong> {selectedRow.sessionId}</Typography>
+                      <Typography variant="body2"><strong>IP Address:</strong> {selectedRow.ipAddress}</Typography>
+                      <Typography variant="body2"><strong>Screen:</strong> {selectedRow.screenResolution}</Typography>
+                      <Typography variant="body2"><strong>Language:</strong> {selectedRow.language}</Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Device & Browser */}
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <FaDesktop size={14} />
+                      Device & Browser
+                    </Typography>
+                    <Box sx={{ pl: 2 }}>
+                      <Typography variant="body2"><strong>Device:</strong> {selectedRow.deviceType}</Typography>
+                      <Typography variant="body2"><strong>Browser:</strong> {selectedRow.browser} ({selectedRow.os})</Typography>
+                      <Typography variant="body2"><strong>User Agent:</strong> </Typography>
+                      <Typography variant="caption" sx={{ wordBreak: 'break-all', display: 'block', mt: 0.5 }}>
+                        {selectedRow.userAgent}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Location */}
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <FaGlobe size={14} />
+                      Location
+                    </Typography>
+                    <Box sx={{ pl: 2 }}>
+                      <Typography variant="body2"><strong>Country:</strong> {selectedRow.country !== 'unknown' ? selectedRow.country : 'Unknown'}</Typography>
+                      <Typography variant="body2"><strong>City:</strong> {selectedRow.city !== 'unknown' ? selectedRow.city : 'Unknown'}</Typography>
+                      <Typography variant="body2"><strong>Region:</strong> {selectedRow.region !== 'unknown' ? selectedRow.region : 'Unknown'}</Typography>
+                      <Typography variant="body2"><strong>Timezone:</strong> {selectedRow.timezone !== 'unknown' ? selectedRow.timezone : 'Unknown'}</Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Navigation */}
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <FaLink size={14} />
+                      Navigation
+                    </Typography>
+                    <Box sx={{ pl: 2 }}>
+                      <Typography variant="body2"><strong>Page:</strong> {selectedRow.pageUrl}</Typography>
+                      <Typography variant="body2"><strong>Title:</strong> {selectedRow.pageTitle}</Typography>
+                      <Typography variant="body2"><strong>Referrer:</strong> {selectedRow.referrer}</Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Action Details */}
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <FaChartBar size={14} />
+                      Action Details
+                    </Typography>
+                    <Box sx={{ pl: 2 }}>
+                      <Typography variant="body2"><strong>Type:</strong> {formatActionType(selectedRow.actionType)}</Typography>
+                      <Typography variant="body2"><strong>Action:</strong> {selectedRow.action}</Typography>
+                      <Typography variant="body2"><strong>Time:</strong> {new Date(selectedRow.createdAt).toLocaleString()}</Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
+      </Box>
+    </Box>
   );
 };
 

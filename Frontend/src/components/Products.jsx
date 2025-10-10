@@ -8,18 +8,23 @@ const Products = ({ filters, sort, query }) => {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     const getProducts = async () => {
       setIsLoading(true);
+      setPage(1); // Reset to first page when filters/query change
       try {
         let res;
         if (query) {
-          res = await userRequest.get(`/products?search=${query}`);
+          res = await userRequest.get(`/products?search=${query}&page=1&limit=32`);
         } else {
-          res = await userRequest.get("/products");
+          res = await userRequest.get("/products?page=1&limit=32");
         }
         setProducts(res.data);
+        setHasMore(res.data.length === 32); // If we got 32 products, there might be more
       } catch (error) {
         console.log(error);
       } finally {
@@ -28,6 +33,30 @@ const Products = ({ filters, sort, query }) => {
     };
     getProducts();
   }, [query]);
+
+  const loadMoreProducts = async () => {
+    if (isLoadingMore || !hasMore) return;
+    
+    setIsLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      let res;
+      if (query) {
+        res = await userRequest.get(`/products?search=${query}&page=${nextPage}&limit=32`);
+      } else {
+        res = await userRequest.get(`/products?page=${nextPage}&limit=32`);
+      }
+      
+      const newProducts = res.data;
+      setProducts(prevProducts => [...prevProducts, ...newProducts]);
+      setPage(nextPage);
+      setHasMore(newProducts.length === 32); // If we got 32 products, there might be more
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     let tempProducts = [...products];
@@ -117,6 +146,9 @@ const Products = ({ filters, sort, query }) => {
             </svg>
             <span className="text-gray-700">
               Showing <span className="font-semibold text-rose-600">{filteredProducts.length}</span> products
+              {hasMore && !isLoading && (
+                <span className="text-rose-500 ml-2">• More available</span>
+              )}
             </span>
           </div>
         </div>
@@ -137,58 +169,72 @@ const Products = ({ filters, sort, query }) => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-            {filteredProducts.map((product) => (
-              <Link 
-                to={`/product/${product._id}`} 
-                key={product._id}
-                className="block transition-all duration-500 hover:-translate-y-2 group"
-              >
-                <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white group-hover:border-rose-100 h-full flex flex-col">
-                  <Product product={product} />
-                </div>
-              </Link>
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+              {filteredProducts.map((product) => (
+                <Link 
+                  to={`/product/${product._id}`} 
+                  key={product._id}
+                  className="block transition-all duration-500 hover:-translate-y-2 group"
+                >
+                  <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white group-hover:border-rose-100 h-full flex flex-col">
+                    <Product product={product} />
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Load More Button */}
+            {hasMore && (
+              <div className="text-center mt-16">
+                <button 
+                  onClick={loadMoreProducts}
+                  disabled={isLoadingMore}
+                  className="bg-gradient-to-r from-rose-400 to-pink-500 text-white px-8 py-4 rounded-full hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 font-medium flex items-center justify-center mx-auto group disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <span>Load More Products</span>
+                      <svg className="w-5 h-5 ml-2 transform group-hover:translate-y-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+                {!isLoadingMore && (
+                  <p className="text-gray-500 mt-4 text-sm">
+                    Loaded {page * 32} products • Click to load more
+                  </p>
+                )}
+              </div>
+            )}
+          </>
         )}
 
-        {/* Load More Button */}
-        {filteredProducts.length > 0 && filteredProducts.length >= 12 && (
-          <div className="text-center mt-16">
-            <button className="bg-gradient-to-r from-rose-400 to-pink-500 text-white px-8 py-4 rounded-full hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 font-medium flex items-center justify-center mx-auto group">
-              <span>Load More Products</span>
-              <svg className="w-5 h-5 ml-2 transform group-hover:translate-y-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+        {/* Show message when no more products */}
+        {!hasMore && filteredProducts.length > 0 && (
+          <div className="text-center mt-12">
+            <div className="bg-white/80 backdrop-blur-sm rounded-full px-6 py-3 inline-flex items-center shadow-sm border border-rose-100">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-rose-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
-            </button>
+              <span className="text-gray-700">
+                You've reached the end! All {filteredProducts.length} products are displayed.
+              </span>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Animation styles */}
-      <style jsx>{`
-        @keyframes float1 {
-          0%, 100% { transform: translateY(0) translateX(0); }
-          50% { transform: translateY(-15px) translateX(10px); }
-        }
-        @keyframes float2 {
-          0%, 100% { transform: translateY(0) translateX(0); }
-          50% { transform: translateY(10px) translateX(-15px); }
-        }
-        @keyframes float3 {
-          0%, 100% { transform: translateY(0) translateX(0); }
-          50% { transform: translateY(-8px) translateX(-8px); }
-        }
-        .animate-float1 {
-          animation: float1 8s ease-in-out infinite;
-        }
-        .animate-float2 {
-          animation: float2 10s ease-in-out infinite;
-        }
-        .animate-float3 {
-          animation: float3 12s ease-in-out infinite;
-        }
-      `}</style>
+
     </div>
   );
 };
