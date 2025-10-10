@@ -21,7 +21,7 @@ const cleanupOldAnalytics = async () => {
   }
 };
 
-// Schedule to run daily at 2:00 AM
+// Schedule to run daily at 2:00 AM new york time
 const scheduleAnalyticsCleanup = () => {
   cron.schedule('0 2 * * *', cleanupOldAnalytics, {
     scheduled: true,
