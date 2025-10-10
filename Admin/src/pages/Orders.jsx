@@ -73,7 +73,7 @@ const Orders = () => {
       headerClassName: 'font-bold text-gray-700',
       renderCell: (params) => (
         <span className="font-semibold text-gray-900">
-          ${params.row.total?.toFixed(2) || '0.00'}
+          KES{params.row.total?.toFixed(2) || '0.00'}
         </span>
       )
     },
@@ -199,7 +199,7 @@ const Orders = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">${totalRevenue.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">KES{totalRevenue.toFixed(2)}</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                 <span className="text-green-600 font-bold text-lg">$</span>

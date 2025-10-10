@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { userRequest } from "../requestMethods";
 import { useNavigate } from "react-router-dom";
+import { trackButtonClick } from "../utils/analytics";
 
 const Banner = () => {
   const [isSpinning, setIsSpinning] = useState(false);
@@ -11,6 +12,7 @@ const Banner = () => {
   const [currentTitleIndex, setCurrentTitleIndex] = useState(0);
   const [isTyping, setIsTyping] = useState(true);
   const [showPopup, setShowPopup] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const wheelRef = useRef(null);
   const navigate = useNavigate();
 
@@ -60,6 +62,7 @@ const Banner = () => {
         };
         
         setBannerData(bannerData);
+        setIsLoading(false);
       } catch (error) {
         console.error("Failed to fetch banner data:", error);
         // Fallback data if fetch fails
@@ -70,6 +73,7 @@ const Banner = () => {
           description: "Experience the transformative power of our premium skincare and cosmetics, crafted with natural ingredients for visible results.",
           titleOptions: defaultTitleOptions
         });
+        setIsLoading(false);
       }
     };
     
@@ -134,6 +138,12 @@ const Banner = () => {
     const discoveryIndex = Math.floor(Math.random() * productCategories.length);
     const discoveredCategory = productCategories[discoveryIndex];
     
+    // Track spin start - IMPORTANT ACTION
+    trackButtonClick("discovery_wheel_spin", {
+      category: discoveredCategory.name,
+      spinDegrees: spinDegrees
+    });
+    
     if (wheelRef.current) {
       wheelRef.current.style.transition = "transform 4s cubic-bezier(0.2, 0.8, 0.2, 1)";
       wheelRef.current.style.transform = `rotate(${spinDegrees}deg)`;
@@ -164,15 +174,32 @@ const Banner = () => {
 
   const handleCreateTimetable = () => {
     setShowPopup(false);
+    
+    // Track timetable creation - IMPORTANT ACTION
+    trackButtonClick("create_skincare_timetable", {
+      source: "welcome_popup"
+    });
+    
     navigate("/skincare-timetable");
   };
 
   const handleCreateCustomPackage = () => {
     setShowPopup(false);
+    
+    // Track custom package creation - IMPORTANT ACTION
+    trackButtonClick("create_custom_package", {
+      source: "welcome_popup"
+    });
+    
     navigate("/packages");
   };
 
-  if (!bannerData) {
+  const handlePopupMainAction = () => {
+    closePopup();
+  };
+
+  // Loading state
+  if (isLoading) {
     return (
       <section className="bg-gradient-to-r from-pink-100 via-white to-pink-50 py-24 px-8 min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -207,7 +234,6 @@ const Banner = () => {
                   e.target.src = "https://i.pinimg.com/originals/4f/05/f9/4f05f907a1486c47b69fac1d4ab1f3a4.gif";
                 }}
               />
-           
             </div>
             
             {/* Content Section */}
@@ -244,7 +270,7 @@ const Banner = () => {
               
               {/* Main Action Button */}
               <button
-                onClick={closePopup}
+                onClick={handlePopupMainAction}
                 className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-4 rounded-xl font-bold hover:from-pink-600 hover:to-purple-700 transition-all transform hover:scale-105 shadow-lg border-2 border-white/20 mb-4 text-lg"
               >
                 Start Your Discovery
@@ -331,7 +357,7 @@ const Banner = () => {
                 {/* Wheel */}
                 <div 
                   ref={wheelRef}
-                  className="absolute inset-0 rounded-full overflow-hidden border-8 border-white shadow-2xl transition-transform duration-100"
+                  className="absolute inset-0 rounded-full overflow-hidden border-8 border-white shadow-2xl transition-transform duration-100 cursor-pointer hover:shadow-2xl hover:border-pink-300 transition-all"
                   style={{ transform: 'rotate(0deg)' }}
                 >
                   {/* Wheel segments */}

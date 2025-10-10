@@ -8,6 +8,9 @@ import sendPendingOrderEmail from "./EmailServices/sendPendingOrderEmail.js";
 import sendDeliveredOrderEmail from "./EmailServices/sendDeliveredOrderEmail.js";
 import sendPromotionEmail from "./EmailServices/sendPromotionemail.js";
 import sendTimetableEmail from "./EmailServices/sendTimetabeEmail.js"; 
+import { scheduleAnalyticsCleanup } from "./EmailServices/clearAnalytics.js";
+
+
 
 dotenv.config();
 const app = express();
@@ -20,7 +23,9 @@ const services = () => {
     sendWelcomeEmail();
     sendPendingOrderEmail();
     sendDeliveredOrderEmail();
-    sendTimetableEmail(); // Add timetable email service
+    sendTimetableEmail();
+    
+     // Add timetable email service
   });
 };
 
@@ -31,6 +36,7 @@ const promotion = () => {
 };
 
 services();
+scheduleAnalyticsCleanup();
 promotion();
 
 app.listen(PORT, () => {

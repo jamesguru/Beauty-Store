@@ -10,6 +10,7 @@ import {
   FaSignOutAlt,
   FaUser,
   FaUsers,
+  FaDollarSign,
   FaGift,
   FaPlus,
   FaBoxOpen
@@ -26,10 +27,9 @@ const Menu = () => {
     { icon: FaBox, label: 'Products', path: '/products', color: 'text-orange-500' },
     { icon: FaGift, label: 'Bundles', path: '/bundles', color: 'text-pink-500' },
     { icon: FaClipboardList, label: 'Orders', path: '/orders', color: 'text-red-500' },
+    { icon: FaDollarSign, label: 'Payments', path: '/payments', color: 'text-teal-500' },
     { icon: FaElementor, label: 'Banners', path: '/banners', color: 'text-indigo-500' },
-    { icon: FaCog, label: 'Settings', path: '/settings', color: 'text-gray-500' },
-    { icon: FaChartBar, label: 'Charts', path: '/charts', color: 'text-teal-500' },
-    { icon: FaClipboard, label: 'All logs', path: '/logs', color: 'text-cyan-500' },
+    { icon: FaClipboard, label: 'Tracking users', path: '/tracking', color: 'text-cyan-500' },
   ];
 
   const isActive = (path) => {

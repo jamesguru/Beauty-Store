@@ -9,7 +9,9 @@ import userRoute from "./routes/user.route.js"
 import orderRoute from "./routes/order.route.js"
 import stripeRoute from "./routes/stripe.js"
 import timetableRoute from "./routes/timetable.route.js";
-import bundleRoute from "./routes/bundle.routes.js"; // Add this line
+import analyticsRoute from "./routes/analytics.route.js";
+import bundleRoute from "./routes/bundle.routes.js";
+import paymentRoute from "./routes/payment.route.js"; // Add this line
 
 const app = express();
 
@@ -30,7 +32,9 @@ app.use("/api/v1/users", userRoute)
 app.use("/api/v1/orders", orderRoute)
 app.use("/api/v1/stripe", stripeRoute)
 app.use("/api/v1/timetable", timetableRoute)
-app.use("/api/v1/bundles", bundleRoute) // Add this line
+app.use("/api/v1/bundles", bundleRoute)
+app.use("/api/v1/analytics", analyticsRoute);
+app.use("/api/v1/payments", paymentRoute) // Add this line
 
 // Error middleware
 app.use(notFound);

@@ -86,7 +86,7 @@ const Products = () => {
       headerClassName: 'font-bold text-gray-700',
       renderCell: (params) => (
         <span className="font-semibold text-gray-900">
-          ${params.row.originalPrice}
+          KES{params.row.originalPrice}
         </span>
       )
     },

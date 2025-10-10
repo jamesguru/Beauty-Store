@@ -1,4 +1,4 @@
-import { FaMinus, FaPlus, FaTrashAlt, FaArrowLeft, FaShoppingBag, FaCreditCard, FaBox, FaInfoCircle, FaTimes, FaSpinner } from 'react-icons/fa';
+import { FaMinus, FaPlus, FaTrashAlt, FaArrowLeft, FaShoppingBag, FaCreditCard, FaBox, FaInfoCircle, FaTimes, FaSpinner, FaStore, FaTruck } from 'react-icons/fa';
 import { useDispatch, useSelector } from "react-redux";
 import { clearCart, removeProduct, updateQuantity } from '../redux/cartRedux';
 import { paymentRequest, userRequest } from "../requestMethods";
@@ -23,7 +23,9 @@ const Cart = () => {
     phone: '',
     email: '',
     address: '',
-    payNow: false
+    payNow: false,
+    pickupOption: '', // 'pickup' or 'delivery'
+    locationType: '' // 'nairobi' or 'outside'
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentOrderId, setCurrentOrderId] = useState(null);
@@ -141,6 +143,22 @@ const Cart = () => {
     }));
   };
 
+  const handlePickupOptionChange = (option) => {
+    setOrderDetails(prev => ({
+      ...prev,
+      pickupOption: option,
+      // Reset location type if switching to pickup
+      ...(option === 'pickup' && { locationType: '' })
+    }));
+  };
+
+  const handleLocationTypeChange = (location) => {
+    setOrderDetails(prev => ({
+      ...prev,
+      locationType: location
+    }));
+  };
+
   const handleProceedToCheckout = () => {
     if (!user.currentUser) {
       toast.error("Please login to place an order");
@@ -161,7 +179,9 @@ const Cart = () => {
           phone: '',
           email: '',
           address: '',
-          payNow: false
+          payNow: false,
+          pickupOption: '',
+          locationType: ''
         });
         setPhoneError('');
       }, 300);
@@ -184,7 +204,30 @@ const Cart = () => {
     setModalStep(2);
   };
 
+  // Calculate shipping fee based on user selection
+  const calculateShippingFee = () => {
+    if (orderDetails.pickupOption === 'pickup') {
+      return 0; // Free for pickup
+    } else if (orderDetails.locationType === 'nairobi') {
+      return 200; // KES 200 for Nairobi delivery
+    } else if (orderDetails.locationType === 'outside') {
+      return 350; // KES 350 for outside Nairobi delivery
+    }
+    return 0; // Default to 0 if not selected
+  };
+
   const handlePlaceOrder = async () => {
+    // Validate pickup/delivery selection
+    if (!orderDetails.pickupOption) {
+      toast.error('Please choose whether you will pickup or need delivery');
+      return;
+    }
+
+    if (orderDetails.pickupOption === 'delivery' && !orderDetails.locationType) {
+      toast.error('Please specify your delivery location');
+      return;
+    }
+
     // Validate phone number before proceeding
     const phoneValidation = validatePhoneNumber(orderDetails.phone);
     if (!phoneValidation.isValid) {
@@ -201,7 +244,9 @@ const Cart = () => {
 
     try {
       // All amounts are in KES now
-      const totalInKES = cart.total;
+      const subtotal = cart.total;
+      const shippingFee = calculateShippingFee();
+      const totalInKES = subtotal + shippingFee;
 
       // Format phone number to international format
       const formattedPhone = validatePhoneNumber(orderDetails.phone).formatted;
@@ -210,17 +255,21 @@ const Cart = () => {
       const orderData = {
         userId: user.currentUser._id,
         name: orderDetails.name,
-        phone: formattedPhone.toString(), // Convert to string for database
+        phone: formattedPhone.toString(),
         email: orderDetails.email || user.currentUser.email,
         address: orderDetails.address,
         products: cart.products.map(product => ({
           productId: product._id,
           title: product.title,
           quantity: product.quantity,
-          price: product.price, // Price in KES
+          price: product.price,
           img: product.img[0]
         })),
-        total: totalInKES, // Total in KES
+        total: totalInKES,
+        subtotal: subtotal,
+        shippingFee: shippingFee,
+        pickupOption: orderDetails.pickupOption,
+        locationType: orderDetails.locationType,
         status: orderDetails.payNow ? 0 : 1, // 0 = pending payment, 1 = confirmed order
       };
 
@@ -232,21 +281,16 @@ const Cart = () => {
         // Proceed with payment in KES
         const paymentData = {
           email: orderDetails.email || user.currentUser.email,
-          reference: orderResponse.data._id, // Use order ID as reference
-          phone: formattedPhone.toString(), // Use formatted phone number
+          reference: orderResponse.data._id,
+          phone: formattedPhone.toString(),
           first_name: orderDetails.name.split(' ')[0],
           last_name: orderDetails.name.split(' ').slice(1).join(' ') || 'Customer',
-          amount: totalInKES, // Send amount in KES
+          amount: totalInKES,
           description: `Order for ${orderDetails.name} - ${cart.products.length} items`
         };
 
         console.log('💳 Making payment request with data:', paymentData);
-        console.log('🔗 Payment endpoint: /pesapal/payment');
-        console.log('💰 Amount in KES:', totalInKES);
-        console.log('📱 Formatted phone:', formattedPhone);
-        
         const paymentResponse = await paymentRequest.post("/payment", paymentData);
-        console.log('✅ Payment response:', paymentResponse.data);
         
         if (paymentResponse.data) {
           setCurrentOrderId(orderResponse.data._id);
@@ -259,7 +303,14 @@ const Cart = () => {
         }
       } else {
         // Order placed without immediate payment
-        toast.success('🎉 Order placed successfully! We will contact you for payment when your order is ready.');
+        let successMessage = '🎉 Order placed successfully! ';
+        if (orderDetails.pickupOption === 'pickup') {
+          successMessage += 'We look forward to seeing you at our shop!';
+        } else {
+          successMessage += 'We will contact you for payment when your order is ready.';
+        }
+        
+        toast.success(successMessage);
         dispatch(clearCart());
         handleCloseModal();
         navigate('/myorders');
@@ -285,8 +336,8 @@ const Cart = () => {
 
   // Calculate totals in KES
   const subtotal = cart.total || 0;
-  const shipping = subtotal > 0 ? 1500 : 0; // 1500 KES shipping
-  const total = subtotal + shipping;
+  const shippingFee = calculateShippingFee();
+  const total = subtotal + shippingFee;
 
   const renderModalContent = () => {
     if (modalStep === 1) {
@@ -386,6 +437,88 @@ const Cart = () => {
         </div>
 
         <div className="space-y-4">
+          {/* Pickup/Delivery Option */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Would you like to pickup from our shop or need delivery? *
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handlePickupOptionChange('pickup')}
+                className={`p-4 border-2 rounded-lg text-center transition-all duration-200 ${
+                  orderDetails.pickupOption === 'pickup'
+                    ? 'border-rose-500 bg-rose-50 text-rose-700'
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-rose-300'
+                }`}
+              >
+                <FaStore className="w-6 h-6 mx-auto mb-2" />
+                <span className="font-medium">Pickup from Shop</span>
+                <p className="text-xs mt-1 text-green-600">Free - No shipping fee</p>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => handlePickupOptionChange('delivery')}
+                className={`p-4 border-2 rounded-lg text-center transition-all duration-200 ${
+                  orderDetails.pickupOption === 'delivery'
+                    ? 'border-rose-500 bg-rose-50 text-rose-700'
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-rose-300'
+                }`}
+              >
+                <FaTruck className="w-6 h-6 mx-auto mb-2" />
+                <span className="font-medium">Home Delivery</span>
+                <p className="text-xs mt-1">Shipping fee applies</p>
+              </button>
+            </div>
+            
+            {orderDetails.pickupOption === 'pickup' && (
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>📍 Our Shop Location:</strong><br />
+                  Nairobi CBD, near Manchester Coach Bus Station<br />
+                  <span className="text-xs">We'll contact you when your order is ready for pickup</span>
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Delivery Location Selection */}
+          {orderDetails.pickupOption === 'delivery' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Select your delivery area *
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleLocationTypeChange('nairobi')}
+                  className={`p-3 border-2 rounded-lg text-center transition-all duration-200 ${
+                    orderDetails.locationType === 'nairobi'
+                      ? 'border-rose-500 bg-rose-50 text-rose-700'
+                      : 'border-gray-300 bg-white text-gray-700 hover:border-rose-300'
+                  }`}
+                >
+                  <span className="font-medium">Within Nairobi</span>
+                  <p className="text-xs mt-1">KES 200</p>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => handleLocationTypeChange('outside')}
+                  className={`p-3 border-2 rounded-lg text-center transition-all duration-200 ${
+                    orderDetails.locationType === 'outside'
+                      ? 'border-rose-500 bg-rose-50 text-rose-700'
+                      : 'border-gray-300 bg-white text-gray-700 hover:border-rose-300'
+                  }`}
+                >
+                  <span className="font-medium">Outside Nairobi</span>
+                  <p className="text-xs mt-1">KES 350</p>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Form fields */}
           {[
             { label: 'Full Name *', name: 'name', type: 'text', placeholder: 'Enter your full name', required: true },
@@ -432,7 +565,7 @@ const Cart = () => {
           {/* Address field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Delivery Address *
+              {orderDetails.pickupOption === 'pickup' ? 'Your Address (for contact purposes)' : 'Delivery Address *'}
             </label>
             <textarea
               name="address"
@@ -440,12 +573,17 @@ const Cart = () => {
               onChange={handleInputChange}
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all duration-200"
-              placeholder="e.g., 1st Avenue, Kinoo, Kiambu"
-              required
+              placeholder={orderDetails.pickupOption === 'pickup' ? 
+                "Your address (optional, for contact purposes)" : 
+                "e.g., 1st Avenue, Kinoo, Kiambu"
+              }
+              required={orderDetails.pickupOption === 'delivery'}
             />
-            <p className="text-gray-500 text-xs mt-1">
-              Example: 1st Avenue, Kinoo, Kiambu
-            </p>
+            {orderDetails.pickupOption === 'delivery' && (
+              <p className="text-gray-500 text-xs mt-1">
+                Please provide your complete delivery address
+              </p>
+            )}
           </div>
 
           {/* Order Summary */}
@@ -457,8 +595,15 @@ const Cart = () => {
                 <span>KES {subtotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span>Shipping</span>
-                <span>KES {shipping.toLocaleString()}</span>
+                <span>
+                  {orderDetails.pickupOption === 'pickup' ? 'Pickup' : 'Shipping'}
+                  {orderDetails.pickupOption === 'delivery' && orderDetails.locationType && 
+                    ` (${orderDetails.locationType === 'nairobi' ? 'Nairobi' : 'Outside Nairobi'})`
+                  }
+                </span>
+                <span>
+                  {shippingFee === 0 ? 'FREE' : `KES ${shippingFee.toLocaleString()}`}
+                </span>
               </div>
               <div className="flex justify-between font-semibold border-t pt-2">
                 <span>Total</span>
@@ -472,7 +617,8 @@ const Cart = () => {
         <div className="mt-6 space-y-3">
           <button
             onClick={handlePlaceOrder}
-            disabled={isProcessing || phoneError}
+            disabled={isProcessing || phoneError || !orderDetails.pickupOption || 
+                     (orderDetails.pickupOption === 'delivery' && !orderDetails.locationType)}
             className="w-full bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center transform hover:scale-[1.02] disabled:scale-100"
           >
             {isProcessing ? (
@@ -586,7 +732,7 @@ const Cart = () => {
               onClick={handleCloseModal}
             />
             
-            {/* Modal content with scale animation - different sizes for different steps */}
+            {/* Modal content with scale animation */}
             <div className={`
               relative bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto
               transform transition-all duration-300 ease-out
@@ -721,16 +867,23 @@ const Cart = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Shipping</span>
-                    <span className="font-medium">KES {shipping.toLocaleString()}</span>
+                    <span className="font-medium">
+                      {subtotal > 0 ? 'Select option' : 'KES 0'}
+                    </span>
                   </div>
-                  {subtotal > 0 && subtotal < 7500 && ( // 7500 KES = ~50 USD equivalent
-                    <div className="text-sm text-rose-600 bg-rose-50 p-3 rounded-lg mt-2">
-                      <span className="font-medium">You're KES {(7500 - subtotal).toLocaleString()} away from free shipping!</span>
-                    </div>
-                  )}
+                  <div className="text-sm text-rose-600 bg-rose-50 p-3 rounded-lg">
+                    <span className="font-medium">💡 Shipping Options:</span>
+                    <ul className="mt-1 text-xs space-y-1">
+                      <li>• Pickup from shop: <strong>FREE</strong></li>
+                      <li>• Delivery within Nairobi: <strong>KES 200</strong></li>
+                      <li>• Delivery outside Nairobi: <strong>KES 350</strong></li>
+                    </ul>
+                  </div>
                   <div className="flex justify-between pt-4 border-t border-rose-100">
                     <span className="text-lg font-semibold">Total</span>
-                    <span className="text-lg font-semibold text-rose-700">KES {total.toLocaleString()}</span>
+                    <span className="text-lg font-semibold text-rose-700">
+                      {subtotal > 0 ? 'Select shipping' : 'KES 0'}
+                    </span>
                   </div>
                 </div>
 
@@ -767,13 +920,14 @@ const Cart = () => {
                 </div>
               </div>
 
-              {/* Security Note */}
-              <div className="bg-rose-50 rounded-2xl p-4 mt-4 text-center">
-                <p className="text-xs text-rose-700 flex items-center justify-center">
-                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                  </svg>
-                  Secure checkout. Pay now or when your order is ready!
+              {/* Shipping Info */}
+              <div className="bg-blue-50 rounded-2xl p-4 mt-4">
+                <p className="text-sm text-blue-700 flex items-start">
+                  <FaInfoCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>
+                    <strong>Free pickup</strong> available at our Nairobi CBD shop (near Manchester Coach Bus Station). 
+                    Delivery options available for Nairobi (KES 200) and outside Nairobi (KES 350).
+                  </span>
                 </p>
               </div>
             </div>

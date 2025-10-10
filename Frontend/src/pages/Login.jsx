@@ -310,7 +310,7 @@ const Login = () => {
               {/* Informational message about social login */}
               <div className="mt-4 text-center">
                 <p className="text-xs text-gray-500 italic">
-                  💫 DB Tip: Use your email and password for instant access to your beauty account
+                DB Tip: Use your email and password for instant access to your beauty account
                 </p>
               </div>
             </div>

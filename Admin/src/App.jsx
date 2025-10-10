@@ -10,6 +10,8 @@ import Product from './pages/Product';
 import Bundles from './pages/Bundle';
 import CreateBundle from './pages/NewBundle';
 import Login from './pages/Login';
+import Payments from './pages/Payments';
+import Analytics from './pages/Analytics';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -56,6 +58,10 @@ function App () {
           path: '/orders',
           element: <Orders />,
         },
+         {
+          path: '/payments',
+          element: <Payments />,
+        },
         {
           path: '/bundles',
           element: <Bundles />,
@@ -67,6 +73,10 @@ function App () {
         {
           path: '/banners',
           element: <Banners />,
+        },
+         {
+          path: '/tracking',
+          element: <Analytics />,
         },
         {
           path: '/newproduct',
