@@ -12,6 +12,7 @@ import CreateBundle from './pages/NewBundle';
 import Login from './pages/Login';
 import Payments from './pages/Payments';
 import Analytics from './pages/Analytics';
+import ClinicAssessments from './pages/Clinic';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -77,6 +78,10 @@ function App () {
          {
           path: '/tracking',
           element: <Analytics />,
+        },
+        {
+          path: '/clinic',
+          element: <ClinicAssessments />,
         },
         {
           path: '/newproduct',

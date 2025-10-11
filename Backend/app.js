@@ -7,6 +7,7 @@ import productRoute from "./routes/product.route.js"
 import bannerRoute from "./routes/banner.route.js"
 import userRoute from "./routes/user.route.js"
 import orderRoute from "./routes/order.route.js"
+import clinicRoute from "./routes/clinic.route.js";
 import stripeRoute from "./routes/stripe.js"
 import timetableRoute from "./routes/timetable.route.js";
 import analyticsRoute from "./routes/analytics.route.js";
@@ -31,6 +32,7 @@ app.use("/api/v1/banners", bannerRoute)
 app.use("/api/v1/users", userRoute)
 app.use("/api/v1/orders", orderRoute)
 app.use("/api/v1/stripe", stripeRoute)
+app.use("/api/v1/clinic", clinicRoute);
 app.use("/api/v1/timetable", timetableRoute)
 app.use("/api/v1/bundles", bundleRoute)
 app.use("/api/v1/analytics", analyticsRoute);

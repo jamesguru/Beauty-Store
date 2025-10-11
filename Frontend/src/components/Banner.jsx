@@ -194,6 +194,17 @@ const Banner = () => {
     navigate("/packages");
   };
 
+  const handleFreeSkinAssessment = () => {
+    setShowPopup(false);
+    
+    // Track skin assessment - IMPORTANT ACTION
+    trackButtonClick("free_skin_assessment", {
+      source: "welcome_popup"
+    });
+    
+    navigate("/skin-clinic");
+  };
+
   const handlePopupMainAction = () => {
     closePopup();
   };
@@ -212,10 +223,10 @@ const Banner = () => {
 
   return (
     <>
-      {/* Larger Popup with GIF */}
+      {/* Larger Popup with GIF - Increased height */}
       {showPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4">
-          <div className="bg-gradient-to-br from-white to-pink-50 rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden transform animate-scale-in border-2 border-white/20 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-white to-pink-50 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform animate-scale-in border-2 border-white/20 backdrop-blur-sm">
             {/* Close Button */}
             <button
               onClick={closePopup}
@@ -224,16 +235,18 @@ const Banner = () => {
               <span className="text-gray-700 text-xl font-light">×</span>
             </button>
             
-            {/* GIF Section */}
-            <div className="relative h-48 bg-gradient-to-r from-pink-400 to-purple-500 overflow-hidden">
+            {/* GIF Section - Increased height */}
+            <div className="relative h-64 bg-gradient-to-r from-pink-400 to-purple-500 overflow-hidden">
               <img 
-                src="https://i.pinimg.com/originals/4f/05/f9/4f05f907a1486c47b69fac1d4ab1f3a4.gif"
+                src="https://res.cloudinary.com/dap91fhxh/image/upload/v1760179631/Untitled_design_3_xq4cw0.gif"
                 alt="Discover Beauty Products"
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  e.target.src = "https://i.pinimg.com/originals/4f/05/f9/4f05f907a1486c47b69fac1d4ab1f3a4.gif";
+                  e.target.src = "https://res.cloudinary.com/dap91fhxh/image/upload/v1760179631/Untitled_design_3_xq4cw0.gif";
                 }}
               />
+              {/* Overlay gradient for better text readability */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
             </div>
             
             {/* Content Section */}
@@ -266,6 +279,12 @@ const Banner = () => {
                   </div>
                   <span className="text-xs text-gray-600">Results</span>
                 </div>
+                <div className="flex flex-col items-center">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mb-2">
+                    <span className="text-green-600 text-lg">🔍</span>
+                  </div>
+                  <span className="text-xs text-gray-600">Assessment</span>
+                </div>
               </div>
               
               {/* Main Action Button */}
@@ -276,21 +295,28 @@ const Banner = () => {
                 Start Your Discovery
               </button>
               
-              {/* Quick Options */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Quick Options - Now 3 columns */}
+              <div className="grid grid-cols-3 gap-4">
                 <button
                   onClick={handleCreateTimetable}
-                  className="bg-white border-2 border-pink-200 text-pink-700 py-3 px-4 rounded-lg font-semibold hover:bg-pink-50 transition-all text-sm text-center flex items-center justify-center space-x-2"
+                  className="bg-white border-2 border-pink-200 text-pink-700 py-3 px-4 rounded-lg font-semibold hover:bg-pink-50 transition-all text-sm text-center flex flex-col items-center justify-center space-y-1"
                 >
-                  <span>📅</span>
-                  <span> Create Your Skincare Timetable</span>
+                  <span className="text-lg">📅</span>
+                  <span className="text-xs leading-tight">Create Skincare Timetable</span>
                 </button>
                 <button
                   onClick={handleCreateCustomPackage}
-                  className="bg-white border-2 border-purple-200 text-purple-700 py-3 px-4 rounded-lg font-semibold hover:bg-purple-50 transition-all text-sm text-center flex items-center justify-center space-x-2"
+                  className="bg-white border-2 border-purple-200 text-purple-700 py-3 px-4 rounded-lg font-semibold hover:bg-purple-50 transition-all text-sm text-center flex flex-col items-center justify-center space-y-1"
                 >
-                  <span>🎁</span>
-                  <span>Create Your Custom Package</span>
+                  <span className="text-lg">🎁</span>
+                  <span className="text-xs leading-tight">Create Custom Package</span>
+                </button>
+                <button
+                  onClick={handleFreeSkinAssessment}
+                  className="bg-white border-2 border-green-200 text-green-700 py-3 px-4 rounded-lg font-semibold hover:bg-green-50 transition-all text-sm text-center flex flex-col items-center justify-center space-y-1"
+                >
+                  <span className="text-lg">🔍</span>
+                  <span className="text-xs leading-tight">Free Skin Assessment</span>
                 </button>
               </div>
             </div>
@@ -438,7 +464,12 @@ const Banner = () => {
           </div>
         </div>
         
-       
+        {/* Add CSS for triangle pointer */}
+        <style jsx>{`
+          .clip-triangle {
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+          }
+        `}</style>
       </section>
     </>
   );

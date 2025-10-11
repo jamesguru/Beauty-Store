@@ -1,7 +1,7 @@
-import { FaPlus, FaTrash } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaSearch } from 'react-icons/fa';
 import axios from "axios";
 import { userRequest } from '../requestMethods';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const NewProduct = () => {
   const [selectedImages, setSelectedImages] = useState([]);
@@ -12,7 +12,177 @@ const NewProduct = () => {
     skintype: [],
     categories: [],
   });
+  const [searchTerms, setSearchTerms] = useState({
+    concern: '',
+    skintype: '',
+    categories: '',
+  });
   const fileInputRef = useRef(null);
+
+  // Complete beauty and cosmetics data
+  const beautyData = {
+    categories: [
+      "Skincare",
+      "Makeup",
+      "Hair Care",
+      "Fragrance",
+      "Bath & Body",
+      "Tools & Accessories",
+      "Men's Care",
+      "Sun Care",
+      "Oral Care",
+      "Wellness & Supplements",
+      "Toners",
+      "Serums",
+      "Foundations",
+      "Lotions",
+      "Cleansers",
+      "Moisturizers",
+      "Face Masks",
+      "Eye Creams",
+      "Lip Care",
+      "Face Oils",
+      "Exfoliators & Scrubs",
+      "Sunscreen",
+      "BB & CC Creams",
+      "Concealers",
+      "Powders",
+      "Blush",
+      "Bronzers",
+      "Highlighters",
+      "Eyeshadow",
+      "Eyeliner",
+      "Mascara",
+      "Eyebrow Products",
+      "Lipstick",
+      "Lip Gloss",
+      "Lip Liner",
+      "Makeup Remover",
+      "Setting Sprays",
+      "Primers",
+      "Shampoo",
+      "Conditioner",
+      "Hair Masks",
+      "Hair Oils",
+      "Hair Serums",
+      "Hair Styling",
+      "Hair Color",
+      "Hair Treatment",
+      "Perfume",
+      "Cologne",
+      "Body Spray",
+      "Body Lotion",
+      "Body Wash",
+      "Body Scrubs",
+      "Hand Cream",
+      "Body Oil",
+      "Makeup Brushes",
+      "Beauty Blenders",
+      "Hair Tools",
+      "Skincare Tools",
+      "Shaving Products",
+      "Beard Care",
+      "Aftershave",
+      "Toothpaste",
+      "Mouthwash",
+      "Teeth Whitening",
+      "Vitamins",
+      "Supplements"
+    ],
+    concern: [
+      "Dry Skin",
+      "Pigmentation",
+      "Oil Control",
+      "Anti Acne",
+      "Sunburn",
+      "Skin Brightening",
+      "Tan Removal",
+      "Night Routine",
+      "UV Protection",
+      "Damaged Hair",
+      "Frizzy Hair",
+      "Stretch Marks",
+      "Color Protection",
+      "Dry Hair",
+      "Soothing",
+      "Dandruff",
+      "Greying",
+      "Hairfall",
+      "Hair Color",
+      "Well Being",
+      "Acne",
+      "Hair Growth",
+      "Anti Aging",
+      "Wrinkles",
+      "Fine Lines",
+      "Dark Spots",
+      "Hyperpigmentation",
+      "Redness",
+      "Irritation",
+      "Sensitivity",
+      "Rosacea",
+      "Eczema",
+      "Psoriasis",
+      "Dark Circles",
+      "Puffy Eyes",
+      "Large Pores",
+      "Blackheads",
+      "Whiteheads",
+      "Clogged Pores",
+      "Uneven Skin Tone",
+      "Dull Skin",
+      "Dehydrated Skin",
+      "Combination Skin",
+      "Oily Scalp",
+      "Dry Scalp",
+      "Hair Breakage",
+      "Split Ends",
+      "Thinning Hair",
+      "Scalp Health",
+      "Curly Hair",
+      "Straight Hair",
+      "Wavy Hair",
+      "Color Treated Hair",
+      "Chemical Damage",
+      "Heat Damage",
+      "Body Acne",
+      "Back Acne",
+      "Body Odor",
+      "Dry Hands",
+      "Cracked Heels",
+      "Cellulite",
+      "Sun Damage",
+      "Pollution Protection",
+      "Blue Light Protection",
+      "Menstrual Care",
+      "Stress Relief",
+      "Sleep Aid",
+      "Energy Boost",
+      "Immune Support",
+      "Gut Health"
+    ],
+    skintype: [
+      "All",
+      "Oily",
+      "Dry",
+      "Sensitive",
+      "Normal",
+      "Combination",
+      "Acne-Prone",
+      "Mature",
+      "Dehydrated"
+    ]
+  };
+
+  // Filtered options based on search
+  const getFilteredOptions = (field) => {
+    const searchTerm = searchTerms[field].toLowerCase();
+    if (!searchTerm) return beautyData[field];
+    
+    return beautyData[field].filter(option => 
+      option.toLowerCase().includes(searchTerm)
+    );
+  };
 
   // Function to compress image and convert to WebP
   const compressImageToWebP = (file, maxWidth = 800, quality = 0.8) => {
@@ -103,22 +273,31 @@ const NewProduct = () => {
     });
   };
 
-  const handleSelectChange = (e) => {
-    const { name, value } = e.target;
-    if (value && !selectedOptions[name].includes(value)) {
+  const handleSelectChange = (field, value) => {
+    if (value && !selectedOptions[field].includes(value)) {
       setSelectedOptions((prev) => ({
         ...prev,
-        [name]: [...prev[name], value],
+        [field]: [...prev[field], value],
       }));
     }
-    // Reset select after choosing
-    e.target.value = '';
+    // Clear search after selection
+    setSearchTerms(prev => ({
+      ...prev,
+      [field]: ''
+    }));
   };
 
   const handleRemoveOption = (name, value) => {
     setSelectedOptions((prev) => ({
       ...prev,
       [name]: prev[name].filter((option) => option !== value)
+    }));
+  };
+
+  const handleSearchChange = (field, value) => {
+    setSearchTerms(prev => ({
+      ...prev,
+      [field]: value
     }));
   };
 
@@ -208,6 +387,11 @@ const NewProduct = () => {
           concern: [],
           skintype: [],
           categories: [],
+        });
+        setSearchTerms({
+          concern: '',
+          skintype: '',
+          categories: '',
         });
         setUploading("Ready to upload");
       }, 2000);
@@ -478,65 +662,47 @@ const NewProduct = () => {
                     />
                   </div>
 
-                  {/* Dynamic Select Fields */}
-                  {['concern', 'skintype', 'categories'].map((field) => (
+                  {/* Dynamic Select Fields with Search */}
+                  {['categories', 'concern', 'skintype'].map((field) => (
                     <div key={field}>
                       <label className="block text-sm font-medium text-gray-600 mb-2 capitalize">
-                        {field === 'skintype' ? 'Skin Type' : field}
+                        {field === 'skintype' ? 'Skin Type' : field} 
+                        <span className="text-xs text-gray-500 ml-1">
+                          ({selectedOptions[field].length} selected)
+                        </span>
                       </label>
-                      <div className="flex gap-2 mb-2">
-                        <select
-                          name={field}
-                          onChange={handleSelectChange}
-                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        >
-                          <option value="">Select {field}</option>
-                          {field === 'concern' && (
-                            <>
-                              <option>Dry Skin</option>
-                              <option>Pigmentation</option>
-                              <option>Oil Control</option>
-                              <option>Anti Acne</option>
-                              <option>Sunburn</option>
-                              <option>Skin Brightening</option>
-                              <option>Tan Removal</option>
-                              <option>Night Routine</option>
-                              <option>UV Protection</option>
-                              <option>Damaged Hair</option>
-                              <option>Frizzy Hair</option>
-                              <option>Stretch Marks</option>
-                              <option>Color Protection</option>
-                              <option>Dry Hair</option>
-                              <option>Soothing</option>
-                              <option>Dandruff</option>
-                              <option>Greying</option>
-                              <option>Hairfall</option>
-                              <option>Hair Color</option>
-                              <option>Well Being</option>
-                              <option>Acne</option>
-                              <option>Hair Growth</option>
-                            </>
-                          )}
-                          {field === 'skintype' && (
-                            <>
-                              <option>All</option>
-                              <option>Oily</option>
-                              <option>Dry</option>
-                              <option>Sensitive</option>
-                              <option>Normal</option>
-                            </>
-                          )}
-                          {field === 'categories' && (
-                            <>
-                              <option>Toners</option>
-                              <option>Serums</option>
-                              <option>Foundations</option>
-                              <option>Lotions</option>
-                            </>
-                          )}
-                        </select>
+                      
+                      {/* Search Input */}
+                      <div className="relative mb-2">
+                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder={`Search ${field}...`}
+                          value={searchTerms[field]}
+                          onChange={(e) => handleSearchChange(field, e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      {/* Filtered Options List */}
+                      <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg mb-2">
+                        {getFilteredOptions(field).map((option) => (
+                          <div
+                            key={option}
+                            onClick={() => handleSelectChange(field, option)}
+                            className="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                          >
+                            {option}
+                          </div>
+                        ))}
+                        {getFilteredOptions(field).length === 0 && (
+                          <div className="px-4 py-2 text-gray-500 text-center">
+                            No {field} found
+                          </div>
+                        )}
                       </div>
                       
+                      {/* Selected Options */}
                       <div className="flex flex-wrap gap-2">
                         {selectedOptions[field].map((option) => (
                           <span 

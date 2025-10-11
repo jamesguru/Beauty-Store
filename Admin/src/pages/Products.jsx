@@ -206,7 +206,7 @@ const Products = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Avg. Price</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">${averagePrice}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1"> KES{averagePrice}</p>
               </div>
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                 <span className="text-purple-600 font-bold text-lg">$</span>

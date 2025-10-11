@@ -13,7 +13,9 @@ import {
   FaDollarSign,
   FaGift,
   FaPlus,
-  FaBoxOpen
+  FaBoxOpen,
+  FaSearch,
+  FaStethoscope
 } from 'react-icons/fa';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
@@ -29,6 +31,7 @@ const Menu = () => {
     { icon: FaClipboardList, label: 'Orders', path: '/orders', color: 'text-red-500' },
     { icon: FaDollarSign, label: 'Payments', path: '/payments', color: 'text-teal-500' },
     { icon: FaElementor, label: 'Banners', path: '/banners', color: 'text-indigo-500' },
+    { icon: FaStethoscope, label: 'Skin Assessments', path: '/clinic', color: 'text-green-500' },
     { icon: FaClipboard, label: 'Tracking users', path: '/tracking', color: 'text-cyan-500' },
   ];
 
@@ -47,7 +50,7 @@ const Menu = () => {
   };
 
   return (
-    <div className="h-[100vh] bg-gradient-to-b from-gray-900 to-gray-800 p-6 w-80 shadow-2xl border-r border-gray-700">
+    <div className="h-[100vh] bg-gradient-to-b from-gray-900 to-gray-800 p-6 w-80 shadow-2xl border-r border-gray-700 flex flex-col">
       {/* Header */}
       <div className="text-center mb-8 pt-4">
         <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">
@@ -57,66 +60,73 @@ const Menu = () => {
         <p className="text-gray-400 text-sm">Admin Dashboard</p>
       </div>
 
-      {/* Navigation Menu */}
-      <nav className="space-y-1">
-        {menuItems.map((item, index) => {
-          const Icon = item.icon;
-          const active = isActive(item.path);
-          
-          return (
-            <Link key={index} to={item.path}>
-              <div className={`
-                flex items-center px-4 py-3 rounded-xl transition-all duration-300 group cursor-pointer
-                ${active 
-                  ? 'bg-white/10 shadow-lg border-l-4 border-pink-500' 
-                  : 'hover:bg-white/5 hover:border-l-4 hover:border-gray-600'
-                }
-              `}>
+      {/* Navigation Menu - Scrollable Area */}
+      <div className="flex-1 overflow-y-auto">
+        <nav className="space-y-1">
+          {menuItems.map((item, index) => {
+            const Icon = item.icon;
+            const active = isActive(item.path);
+            
+            return (
+              <Link key={index} to={item.path}>
                 <div className={`
-                  w-10 h-10 rounded-lg flex items-center justify-center mr-3 transition-all duration-300
+                  flex items-center px-4 py-3 rounded-xl transition-all duration-300 group cursor-pointer mb-1
                   ${active 
-                    ? 'bg-pink-500 shadow-lg' 
-                    : 'bg-gray-700 group-hover:bg-gray-600'
+                    ? 'bg-white/10 shadow-lg border-l-4 border-pink-500' 
+                    : 'hover:bg-white/5 hover:border-l-4 hover:border-gray-600'
                   }
                 `}>
-                  <Icon className={`
-                    text-lg transition-all duration-300
-                    ${active ? 'text-white' : item.color}
-                  `} />
-                </div>
-                <div className="flex-1">
-                  <p className={`
-                    font-medium transition-all duration-300
-                    ${active ? 'text-white' : 'text-gray-300 group-hover:text-white'}
+                  <div className={`
+                    w-10 h-10 rounded-lg flex items-center justify-center mr-3 transition-all duration-300
+                    ${active 
+                      ? 'bg-pink-500 shadow-lg' 
+                      : 'bg-gray-700 group-hover:bg-gray-600'
+                    }
                   `}>
-                    {item.label}
-                  </p>
+                    <Icon className={`
+                      text-lg transition-all duration-300
+                      ${active ? 'text-white' : item.color}
+                    `} />
+                  </div>
+                  <div className="flex-1">
+                    <p className={`
+                      font-medium transition-all duration-300
+                      ${active ? 'text-white' : 'text-gray-300 group-hover:text-white'}
+                    `}>
+                      {item.label}
+                    </p>
+                  </div>
+                  {active && (
+                    <div className="w-2 h-2 bg-pink-400 rounded-full animate-pulse"></div>
+                  )}
                 </div>
-                {active && (
-                  <div className="w-2 h-2 bg-pink-400 rounded-full animate-pulse"></div>
-                )}
-              </div>
-            </Link>
-          );
-        })}
-      </nav>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
 
-      {/* Logout Section */}
-      <div className="absolute bottom-6 left-6 right-6">
-        <div className="border-t border-gray-100 pt-4">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center px-4 py-3 rounded-xl transition-all duration-300 cursor-pointer group hover:bg-red-50/10"
-          >
-            <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
-              <FaSignOutAlt className="text-white text-lg" />
-            </div>
-            <div className="text-left">
-              <p className="text-white font-medium group-hover:text-red-200 transition-colors duration-300">Logout</p>
-              <p className="text-gray-400 text-xs group-hover:text-red-300 transition-colors duration-300">Secure sign out</p>
-            </div>
-          </button>
-        </div>
+      {/* Fixed Logout Section - Won't overlap */}
+      <div className="mt-auto pt-4 border-t border-gray-700">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center px-4 py-3 rounded-xl transition-all duration-300 hover:bg-red-500/10 group border border-transparent hover:border-red-500/30"
+        >
+          <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg flex items-center justify-center mr-3 transition-transform duration-300 group-hover:scale-105">
+            <FaSignOutAlt className="text-white text-lg" />
+          </div>
+          <div className="text-left flex-1">
+            <p className="text-white font-medium group-hover:text-red-200 transition-colors duration-300">
+              Logout
+            </p>
+            <p className="text-gray-400 text-xs group-hover:text-red-300 transition-colors duration-300">
+              Secure sign out
+            </p>
+          </div>
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+          </div>
+        </button>
       </div>
     </div>
   );
